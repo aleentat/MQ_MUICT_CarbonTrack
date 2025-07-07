@@ -25,6 +25,7 @@ class HomePage extends StatelessWidget {
               ),
               child: Text('Travel Carbon Calculator'),
             ),
+            SizedBox(height: 20),
             ElevatedButton(
               onPressed: () => Navigator.push(
                 context,
@@ -32,6 +33,7 @@ class HomePage extends StatelessWidget {
               ),
               child: Text('Waste Sorting Guide'),
             ),
+            SizedBox(height: 20),
             ElevatedButton(
               onPressed: () => Navigator.push(
                 context,
