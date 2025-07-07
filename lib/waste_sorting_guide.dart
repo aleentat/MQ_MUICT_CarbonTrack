@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'carbon_log_entry.dart';
+import 'carbon_diary_page.dart';
 
 class WasteSortingGuide extends StatefulWidget {
   @override
@@ -19,6 +21,24 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
   };
 
   String? _selectedItem;
+  String? _selectedCategory;
+
+  void _confirmSelection() {
+    if (_selectedItem != null && _selectedCategory != null) {
+      CarbonDiaryPage.logs.add(CarbonLogEntry(
+        type: 'waste',
+        description: '$_selectedItem → $_selectedCategory',
+        timestamp: DateTime.now(),
+      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Entry added to diary')),
+      );
+      setState(() {
+        _selectedItem = null;
+        _selectedCategory = null;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,14 +61,24 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
               onChanged: (value) {
                 setState(() {
                   _selectedItem = value;
+                  _selectedCategory = value != null ? wasteGuide[value] : null;
                 });
               },
             ),
             SizedBox(height: 20),
-            if (_selectedItem != null)
-              Text(
-                'Sort as: ${wasteGuide[_selectedItem]!}',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            if (_selectedCategory != null)
+              Column(
+                children: [
+                  Text(
+                    'Sort as: $_selectedCategory',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 10),
+                  ElevatedButton(
+                    onPressed: _confirmSelection,
+                    child: Text('Add to Diary'),
+                  )
+                ],
               ),
           ],
         ),
