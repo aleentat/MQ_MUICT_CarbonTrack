@@ -13,10 +13,13 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
   bool _calculated = false;
 
   final Map<String, double> emissionFactors = {
-    'Car': 0.21,
-    'Bus': 0.1,
-    'Train': 0.05,
-    'Bike': 0.0,
+    'Diesel Car': 0.167156448880537,
+    'Petrol Car': 0.178188534228188,
+    'Electric Car': 0.0526663489932886,
+    'Bus': 0.102150394630872,
+    'Train': 0.0354629637583893,
+    'Motorbike': 0.10107835704698,
+    'Bicycle': 0.0,
     'Walk': 0.0,
   };
 
