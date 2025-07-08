@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'home_page.dart';
-//import 'carbon_log_entry.dart';
 
 void main() => runApp(CarbonDiaryApp());
 
@@ -9,7 +8,7 @@ class CarbonDiaryApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Carbon Diary',
-      theme: ThemeData(primarySwatch: Colors.green),
+      theme: ThemeData(scaffoldBackgroundColor: Color(0xFFE8ECD7)),
       home: HomePage(),
     );
   }
