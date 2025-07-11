@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'carbon_diary_page.dart';
+// import 'package:intl/intl.dart';
 
 class TravelCarbonCalculator extends StatefulWidget {
   @override
@@ -7,10 +7,12 @@ class TravelCarbonCalculator extends StatefulWidget {
 }
 
 class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
-  String _transportMode = 'Car';
+  String _transportMode = 'Diesel Car';
   double _distance = 0;
   double _carbonOutput = 0;
   bool _calculated = false;
+
+  final List<String> _demoLog = []; // local demo logs
 
   final Map<String, double> emissionFactors = {
     'Diesel Car': 0.167156448880537,
@@ -35,18 +37,12 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
   void _addToDiary() {
     if (!_calculated) return;
 
-    CarbonDiaryPage.logs.add(
-      CarbonLogEntry(
-        type: 'travel',
-        description:
-            '$_transportMode - $_distance km → ${_carbonOutput.toStringAsFixed(2)} kg CO₂',
-        timestamp: DateTime.now(),
-      ),
-    );
+    String log = '$_transportMode - $_distance km → ${_carbonOutput.toStringAsFixed(2)} kg CO₂';
+    _demoLog.add(log);
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Entry added to diary')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Demo: $log')),
+    );
 
     setState(() {
       _calculated = false;
@@ -55,8 +51,18 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
     });
   }
 
+  final TextEditingController _distanceController = TextEditingController();
+
+  @override
+  void dispose() {
+    _distanceController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
+    _distanceController.text = _distance == 0 ? '' : _distance.toString();
+
     return Scaffold(
       backgroundColor: Color(0xFFFCFAF2),
       appBar: AppBar(
@@ -84,23 +90,20 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
                 value: _transportMode,
                 isExpanded: true,
                 underline: SizedBox(),
-                items:
-                    emissionFactors.keys.map((mode) {
-                      return DropdownMenuItem<String>(
-                        value: mode,
-                        child: Text(mode),
-                      );
-                    }).toList(),
+                items: emissionFactors.keys.map((mode) {
+                  return DropdownMenuItem<String>(
+                    value: mode,
+                    child: Text(mode),
+                  );
+                }).toList(),
                 onChanged: (value) => setState(() => _transportMode = value!),
               ),
             ),
             SizedBox(height: 20),
             TextField(
+              controller: _distanceController,
               decoration: InputDecoration(labelText: 'Distance (km)'),
               keyboardType: TextInputType.number,
-              controller: TextEditingController(
-                text: _distance == 0 ? '' : _distance.toString(),
-              ),
               onChanged: (value) {
                 setState(() {
                   _distance = double.tryParse(value) ?? 0;
@@ -108,7 +111,6 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
                 });
               },
             ),
-
             SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
@@ -143,7 +145,7 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
                   padding: EdgeInsets.symmetric(vertical: 14),
                 ),
                 child: Text(
-                  'Add to Diary',
+                  'Add to Diary (Demo)',
                   style: TextStyle(color: Colors.white),
                 ),
               ),
