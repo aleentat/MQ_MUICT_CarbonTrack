@@ -1,29 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../database/db_helper.dart';
+import '../models/waste_diary_entry.dart';
 
-class CarbonLogEntry {
-  final String type; // 'travel' or 'waste'
-  final String description;
-  final DateTime timestamp;
-
-  CarbonLogEntry({
-    required this.type,
-    required this.description,
-    required this.timestamp,
-  });
+class CarbonDiaryPage extends StatefulWidget {
+  @override
+  _CarbonDiaryPageState createState() => _CarbonDiaryPageState();
 }
 
-class CarbonDiaryPage extends StatelessWidget {
-  static List<CarbonLogEntry> logs = [];
+class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
+  List<WasteDiaryEntry> _entries = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadEntries();
+  }
+
+  Future<void> _loadEntries() async {
+    final entries = await DBHelper.instance.getAllWasteDiaryEntries();
+    entries.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    setState(() {
+      _entries = entries;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    logs.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-
-    Map<String, List<CarbonLogEntry>> grouped = {};
-    for (var log in logs) {
-      String date = DateFormat('y-MM-dd').format(log.timestamp);
-      grouped.putIfAbsent(date, () => []).add(log);
+    Map<String, List<WasteDiaryEntry>> grouped = {};
+    for (var entry in _entries) {
+      String date = DateFormat('y-MM-dd').format(entry.timestamp);
+      grouped.putIfAbsent(date, () => []).add(entry);
     }
 
     return Scaffold(
@@ -71,13 +78,11 @@ class CarbonDiaryPage extends StatelessWidget {
                             contentPadding:
                                 EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                             leading: Icon(
-                              log.type == 'travel'
-                                  ? Icons.directions_car
-                                  : Icons.recycling,
+                              Icons.recycling,
                               color: Color(0xFF4C6A4F),
                             ),
                             title: Text(
-                              log.description,
+                              '${log.name} → ${log.type}',
                               style: TextStyle(fontSize: 14),
                             ),
                             subtitle: Text(
