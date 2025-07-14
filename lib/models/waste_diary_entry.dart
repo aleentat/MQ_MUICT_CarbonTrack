@@ -1,7 +1,7 @@
 class WasteDiaryEntry {
   final int? id;
   final String name;
-  final String type;
+  final String type; // Compost / Recyclable / Trash
   final DateTime timestamp;
 
   WasteDiaryEntry({

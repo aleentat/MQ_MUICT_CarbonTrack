@@ -23,7 +23,7 @@ class DBHelper {
 
     return await openDatabase(
       path,
-      version: 2, // Increased version for new table
+      version: 3,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -34,7 +34,8 @@ class DBHelper {
       CREATE TABLE waste_items (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
-        type TEXT NOT NULL
+        type TEXT NOT NULL,
+        category TEXT NOT NULL
       )
     ''');
 
@@ -46,12 +47,13 @@ class DBHelper {
         timestamp TEXT NOT NULL
       )
     ''');
-    // sample
-    await db.insert('waste_items', {'name': 'Banana Peel', 'type': 'Compost'});
-    await db.insert('waste_items', {'name': 'Plastic Bottle', 'type': 'Recyclable'});
-    await db.insert('waste_items', {'name': 'Styrofoam Box', 'type': 'Trash'});
-    await db.insert('waste_items', {'name': 'Newspaper', 'type': 'Recyclable'});
-    await db.insert('waste_items', {'name': 'Leftover Food', 'type': 'Compost'});
+
+    // Sample waste items with categories
+    await db.insert('waste_items', {'name': 'Banana Peel', 'type': 'Compost', 'category': 'Food'});
+    await db.insert('waste_items', {'name': 'Plastic Bottle', 'type': 'Recyclable', 'category': 'Plastic'});
+    await db.insert('waste_items', {'name': 'Styrofoam Box', 'type': 'Trash', 'category': 'Plastic'});
+    await db.insert('waste_items', {'name': 'Newspaper', 'type': 'Recyclable', 'category': 'Paper'});
+    await db.insert('waste_items', {'name': 'Leftover Food', 'type': 'Compost', 'category': 'Food'});
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -65,9 +67,16 @@ class DBHelper {
         )
       ''');
     }
+
+    if (oldVersion < 3) {
+      await db.execute('ALTER TABLE waste_items ADD COLUMN category TEXT');
+
+      // You may need to update old rows with default categories:
+      await db.rawUpdate('UPDATE waste_items SET category = "Other" WHERE category IS NULL');
+    }
   }
 
-  // Waste Items
+  // --------------------------- Waste Items ---------------------------
   Future<int> insertWasteItem(WasteItem item) async {
     final db = await database;
     return await db.insert(
@@ -83,6 +92,16 @@ class DBHelper {
     return List.generate(maps.length, (i) => WasteItem.fromMap(maps[i]));
   }
 
+  Future<List<WasteItem>> getWasteItemsByCategory(String category) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'waste_items',
+      where: 'category = ?',
+      whereArgs: [category],
+    );
+    return List.generate(maps.length, (i) => WasteItem.fromMap(maps[i]));
+  }
+
   Future<int> deleteWasteItem(int id) async {
     final db = await database;
     return await db.delete(
@@ -92,9 +111,10 @@ class DBHelper {
     );
   }
 
-  // Waste Diary Log
+  // --------------------------- Waste Diary ---------------------------
   Future<int> insertWasteDiaryEntry(WasteDiaryEntry entry) async {
     final db = await database;
+    print("Saving to diary: ${entry.name}, ${entry.type}, ${entry.timestamp}");
     return await db.insert(
       'waste_diary_log',
       entry.toMap(),
@@ -105,7 +125,7 @@ class DBHelper {
   Future<List<WasteDiaryEntry>> getAllWasteDiaryEntries() async {
     final db = await database;
     final maps = await db.query('waste_diary_log');
-
+    print("Fetched ${maps.length} diary entries");
     return List.generate(maps.length, (i) => WasteDiaryEntry.fromMap(maps[i]));
   }
 
