@@ -10,11 +10,17 @@ class WasteSortingGuide extends StatefulWidget {
 
 class _WasteSortingGuideState extends State<WasteSortingGuide> {
   List<WasteItem> _allItems = [];
-  List<WasteItem> _filteredItems = [];
-  String _searchQuery = '';
   String? _selectedCategory;
+  String? _selectedSubcategory;
 
-  final List<String> _categories = ['Plastic', 'Glass', 'Metal', 'Paper', 'Food', 'Other'];
+  final Map<String, List<String>> _subcategoryMap = {
+    'Plastic': ['Bottle', 'Bag', 'Foam'],
+    'Glass': ['Bottle', 'Jar', 'Broken Glass'],
+    'Metal': ['Can', 'Foil'],
+    'Paper': ['Newspaper', 'Cardboard', 'Tissue', 'Mixed Paper'],
+    'Food': ['Fruit', 'Leftovers', 'Shells & Bones'],
+    'Other': ['Battery', 'Cloth', 'E-Waste ', 'Hazardous'],
+  };
 
   final Map<String, String> _categoryImages = {
     'Plastic': 'assets/images/plastic.png',
@@ -37,34 +43,22 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
       setState(() {
         _allItems = items;
       });
-      _applyFilters();
     } catch (e) {
       print('Error loading items: $e');
     }
   }
 
-  void _applyFilters() {
+  void _onCategorySelected(String category) {
     setState(() {
-      _filteredItems = _allItems.where((item) {
-        final matchCategory = _selectedCategory == null || item.category == _selectedCategory;
-        final matchSearch = _searchQuery.isEmpty || item.name.toLowerCase().contains(_searchQuery.toLowerCase());
-        return matchCategory && matchSearch;
-      }).toList();
+      _selectedCategory = category;
+      _selectedSubcategory = null;
     });
   }
 
-  void _onSearchChanged(String query) {
-    _searchQuery = query;
-    _applyFilters();
-  }
-
-  void _onCategorySelected(String category) {
-    if (_selectedCategory == category) {
-      _selectedCategory = null; // toggle off
-    } else {
-      _selectedCategory = category;
-    }
-    _applyFilters();
+  void _onSubcategorySelected(String subcategory) {
+    setState(() {
+      _selectedSubcategory = subcategory;
+    });
   }
 
   Future<void> _addToDiary(WasteItem item) async {
@@ -85,8 +79,20 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
     }
   }
 
+  List<WasteItem> getFilteredItems() {
+    return _allItems.where((item) {
+      final matchCategory = _selectedCategory == null || item.category == _selectedCategory;
+      final matchSubcategory = _selectedSubcategory == null || item.subcategory == _selectedSubcategory;
+      return matchCategory && matchSubcategory;
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final filteredItems = getFilteredItems();
+    final categories = _categoryImages.keys.toList();
+    final subcategories = _selectedCategory != null ? _subcategoryMap[_selectedCategory!] ?? [] : [];
+
     return Scaffold(
       backgroundColor: const Color(0xFFFCFAF2),
       appBar: AppBar(
@@ -95,32 +101,20 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
         foregroundColor: Colors.white,
       ),
       body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Search
-            TextField(
-              onChanged: _onSearchChanged,
-              decoration: InputDecoration(
-                hintText: 'Search waste item...',
-                prefixIcon: const Icon(Icons.search),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-            const SizedBox(height: 16),
-
             // Category Grid
             SizedBox(
               height: 120,
               child: GridView.count(
                 crossAxisCount: 3,
                 childAspectRatio: 1,
-                crossAxisSpacing: 8,
-                mainAxisSpacing: 8,
-                children: _categories.map((category) {
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+                physics: const NeverScrollableScrollPhysics(),
+                children: categories.map((category) {
                   final isSelected = _selectedCategory == category;
                   return GestureDetector(
                     onTap: () => _onCategorySelected(category),
@@ -135,13 +129,14 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
                         children: [
                           Image.asset(
                             _categoryImages[category]!,
-                            height: 40,
-                            width: 40,
+                            height: 36,
+                            width: 36,
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
                           Text(
                             category,
                             style: TextStyle(
+                              fontSize: 14,
                               color: isSelected ? Colors.white : const Color(0xFF4C6A4F),
                               fontWeight: FontWeight.bold,
                             ),
@@ -153,24 +148,70 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
                 }).toList(),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
 
-            // Results
+            // Subcategory scroll
+            if (subcategories.isNotEmpty)
+              SizedBox(
+                height: 40,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: subcategories.length,
+                  itemBuilder: (context, index) {
+                    final sub = subcategories[index];
+                    final isSelected = _selectedSubcategory == sub;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: ChoiceChip(
+                        label: Text(sub),
+                        selected: isSelected,
+                        onSelected: (_) => _onSubcategorySelected(sub),
+                        selectedColor: const Color(0xFF4C6A4F),
+                        backgroundColor: Colors.white,
+                        labelStyle: TextStyle(
+                          color: isSelected ? Colors.white : Colors.black,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            const SizedBox(height: 10),
+
+            // Item List
             Expanded(
-              child: _filteredItems.isEmpty
+              child: filteredItems.isEmpty
                   ? const Center(child: Text('No items found.'))
-                  : ListView.builder(
-                      itemCount: _filteredItems.length,
+                  : ListView.separated(
+                      itemCount: filteredItems.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 6),
                       itemBuilder: (context, index) {
-                        final item = _filteredItems[index];
-                        return Card(
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          elevation: 2,
-                          margin: const EdgeInsets.symmetric(vertical: 6),
+                        final item = filteredItems[index];
+                        return Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.1),
+                                spreadRadius: 1,
+                                blurRadius: 5,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
                           child: ListTile(
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                             leading: const Icon(Icons.recycling, color: Color(0xFF4C6A4F)),
-                            title: Text(item.name),
-                            subtitle: Text('Type: ${item.type}'),
+                            title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Type: ${item.type}'),
+                                if (item.tip.isNotEmpty)
+                                  Text('Tip: ${item.tip}', style: const TextStyle(fontStyle: FontStyle.italic)),
+                              ],
+                            ),
                             trailing: IconButton(
                               icon: const Icon(Icons.add, color: Color(0xFF4C6A4F)),
                               onPressed: () => _addToDiary(item),

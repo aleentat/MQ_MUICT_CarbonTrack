@@ -23,7 +23,7 @@ class DBHelper {
 
     return await openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -35,7 +35,9 @@ class DBHelper {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         type TEXT NOT NULL,
-        category TEXT NOT NULL
+        category TEXT NOT NULL,
+        subcategory TEXT NOT NULL,
+        tip TEXT NOT NULL
       )
     ''');
 
@@ -48,12 +50,11 @@ class DBHelper {
       )
     ''');
 
-    // Sample waste items with categories
-    await db.insert('waste_items', {'name': 'Banana Peel', 'type': 'Compost', 'category': 'Food'});
-    await db.insert('waste_items', {'name': 'Plastic Bottle', 'type': 'Recyclable', 'category': 'Plastic'});
-    await db.insert('waste_items', {'name': 'Styrofoam Box', 'type': 'Trash', 'category': 'Plastic'});
-    await db.insert('waste_items', {'name': 'Newspaper', 'type': 'Recyclable', 'category': 'Paper'});
-    await db.insert('waste_items', {'name': 'Leftover Food', 'type': 'Compost', 'category': 'Food'});
+    await db.insert('waste_items', {'name': 'Banana peel', 'type': 'Compost', 'category': 'Food', 'subcategory': 'Fruit/Vegetable', 'tip': 'Great for compost bins.'});
+    await db.insert('waste_items', {'name': 'Soda bottle', 'type': 'Recyclable', 'category': 'Plastic', 'subcategory': 'Bottle', 'tip': 'Rinse before recycling. Remove cap and label.'});
+    await db.insert('waste_items', {'name': 'Styrofoam food box', 'type': 'Trash', 'category': 'Plastic', 'subcategory': 'Foam', 'tip': 'Styrofoam is not recyclable in most areas.'});
+    await db.insert('waste_items', {'name': 'Flyers', 'type': 'Recyclable', 'category': 'Paper', 'subcategory': 'Newspaper', 'tip': 'Dry and clean only.'});
+    await db.insert('waste_items', {'name': 'Cooked rice', 'type': 'Compost', 'category': 'Food', 'subcategory': 'Leftovers', 'tip': 'Avoid oily foods in home compost.'});
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -70,13 +71,12 @@ class DBHelper {
 
     if (oldVersion < 3) {
       await db.execute('ALTER TABLE waste_items ADD COLUMN category TEXT');
-
-      // You may need to update old rows with default categories:
       await db.rawUpdate('UPDATE waste_items SET category = "Other" WHERE category IS NULL');
     }
   }
 
   // --------------------------- Waste Items ---------------------------
+
   Future<int> insertWasteItem(WasteItem item) async {
     final db = await database;
     return await db.insert(
@@ -88,18 +88,51 @@ class DBHelper {
 
   Future<List<WasteItem>> getWasteItems() async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query('waste_items');
+    final maps = await db.query('waste_items');
     return List.generate(maps.length, (i) => WasteItem.fromMap(maps[i]));
   }
 
-  Future<List<WasteItem>> getWasteItemsByCategory(String category) async {
+  Future<List<WasteItem>> getWasteItemsFiltered({String? category, String? subcategory}) async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query(
+
+    String whereClause = '';
+    List<String> whereArgs = [];
+
+    if (category != null) {
+      whereClause = 'category = ?';
+      whereArgs.add(category);
+    }
+
+    if (subcategory != null) {
+      if (whereClause.isNotEmpty) {
+        whereClause += ' AND ';
+      }
+      whereClause += 'subcategory = ?';
+      whereArgs.add(subcategory);
+    }
+
+    final maps = await db.query(
       'waste_items',
-      where: 'category = ?',
-      whereArgs: [category],
+      where: whereClause.isNotEmpty ? whereClause : null,
+      whereArgs: whereArgs.isNotEmpty ? whereArgs : null,
     );
+
     return List.generate(maps.length, (i) => WasteItem.fromMap(maps[i]));
+  }
+
+  Future<List<String>> getDistinctCategories() async {
+    final db = await database;
+    final result = await db.rawQuery('SELECT DISTINCT category FROM waste_items ORDER BY category ASC');
+    return result.map((row) => row['category'] as String).toList();
+  }
+
+  Future<List<String>> getDistinctSubcategoriesByCategory(String category) async {
+    final db = await database;
+    final result = await db.rawQuery(
+      'SELECT DISTINCT subcategory FROM waste_items WHERE category = ? ORDER BY subcategory ASC',
+      [category],
+    );
+    return result.map((row) => row['subcategory'] as String).toList();
   }
 
   Future<int> deleteWasteItem(int id) async {
@@ -112,6 +145,7 @@ class DBHelper {
   }
 
   // --------------------------- Waste Diary ---------------------------
+
   Future<int> insertWasteDiaryEntry(WasteDiaryEntry entry) async {
     final db = await database;
     print("Saving to diary: ${entry.name}, ${entry.type}, ${entry.timestamp}");
