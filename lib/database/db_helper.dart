@@ -158,7 +158,8 @@ class DBHelper {
 
   Future<List<WasteDiaryEntry>> getAllWasteDiaryEntries() async {
     final db = await database;
-    final maps = await db.query('waste_diary_log');
+    final maps = await db.query('waste_diary_log',
+    orderBy: 'timestamp DESC'); //add 17:08
     print("Fetched ${maps.length} diary entries");
     return List.generate(maps.length, (i) => WasteDiaryEntry.fromMap(maps[i]));
   }

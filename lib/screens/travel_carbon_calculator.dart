@@ -1,5 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-// import 'package:intl/intl.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:google_place/google_place.dart';
+import 'package:http/http.dart' as http;
 
 class TravelCarbonCalculator extends StatefulWidget {
   @override
@@ -7,12 +10,18 @@ class TravelCarbonCalculator extends StatefulWidget {
 }
 
 class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
+  final _startController = TextEditingController();
+  final _destController = TextEditingController();
+
+  late GooglePlace googlePlace;
+  List<AutocompletePrediction> startPredictions = [];
+  List<AutocompletePrediction> destPredictions = [];
+
   String _transportMode = 'Diesel Car';
   double _distance = 0;
   double _carbonOutput = 0;
   bool _calculated = false;
-
-  final List<String> _demoLog = []; // local demo logs
+  final List<String> _demoLog = [];
 
   final Map<String, double> emissionFactors = {
     'Diesel Car': 0.167156448880537,
@@ -25,6 +34,17 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
     'Walk': 0.0,
   };
 
+  @override
+  void initState() {
+    super.initState();
+    final apiKey = dotenv.env['GOOGLE_API_KEY'];
+    if (apiKey == null || apiKey.isEmpty) {
+      print('❌ Missing or invalid GOOGLE_API_KEY in .env');
+    } else {
+      googlePlace = GooglePlace(apiKey);
+    }
+  }
+
   void _calculateCarbon() {
     double factor = emissionFactors[_transportMode] ?? 0;
     double result = _distance * factor;
@@ -36,33 +56,73 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
 
   void _addToDiary() {
     if (!_calculated) return;
-
-    String log = '$_transportMode - $_distance km → ${_carbonOutput.toStringAsFixed(2)} kg CO₂';
+    String log =
+        '$_transportMode - $_distance km → ${_carbonOutput.toStringAsFixed(2)} kg CO₂';
     _demoLog.add(log);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Demo: $log')),
-    );
-
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Demo: $log')));
     setState(() {
       _calculated = false;
       _distance = 0;
       _carbonOutput = 0;
+      _startController.clear();
+      _destController.clear();
     });
   }
 
-  final TextEditingController _distanceController = TextEditingController();
+  void _onStartChanged(String value) async {
+    print("Start changed: $value");
+    var result = await googlePlace.autocomplete.get(value);
+    print("Result: $result");
+    if (result != null && result.predictions != null) {
+      setState(() {
+        startPredictions = result.predictions!;
+      });
+    }
+  }
 
-  @override
-  void dispose() {
-    _distanceController.dispose();
-    super.dispose();
+  void _onDestChanged(String value) async {
+    var result = await googlePlace.autocomplete.get(value);
+    if (result != null && result.predictions != null) {
+      setState(() {
+        destPredictions = result.predictions!;
+      });
+    }
+  }
+
+  Future<void> _calculateDistance() async {
+    final origin = _startController.text;
+    final destination = _destController.text;
+    final apiKey = dotenv.env['GOOGLE_API_KEY'];
+
+    final url =
+        'https://maps.googleapis.com/maps/api/distancematrix/json?origins=$origin&destinations=$destination&key=$apiKey';
+
+    final response = await http.get(Uri.parse(url));
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data['rows'][0]['elements'][0]['status'] == 'OK') {
+        final meters = data['rows'][0]['elements'][0]['distance']['value'];
+        final km = meters / 1000;
+        setState(() {
+          _distance = km;
+        });
+        _calculateCarbon();
+      } else {
+        _showError("Could not calculate distance.");
+      }
+    } else {
+      _showError("Failed to fetch distance.");
+    }
+  }
+
+  void _showError(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
   @override
   Widget build(BuildContext context) {
-    _distanceController.text = _distance == 0 ? '' : _distance.toString();
-
     return Scaffold(
       backgroundColor: Color(0xFFFCFAF2),
       appBar: AppBar(
@@ -71,51 +131,77 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
         foregroundColor: Colors.white,
       ),
       body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 30.0, vertical: 40.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Transport Mode',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade300),
+        padding: const EdgeInsets.symmetric(horizontal: 30.0, vertical: 20.0),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Start Location',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
-              child: DropdownButton<String>(
-                value: _transportMode,
-                isExpanded: true,
-                underline: SizedBox(),
-                items: emissionFactors.keys.map((mode) {
-                  return DropdownMenuItem<String>(
-                    value: mode,
-                    child: Text(mode),
-                  );
-                }).toList(),
-                onChanged: (value) => setState(() => _transportMode = value!),
+              TextField(
+                controller: _startController,
+                onChanged: _onStartChanged,
+                decoration: InputDecoration(hintText: 'Enter start point'),
               ),
-            ),
-            SizedBox(height: 20),
-            TextField(
-              controller: _distanceController,
-              decoration: InputDecoration(labelText: 'Distance (km)'),
-              keyboardType: TextInputType.number,
-              onChanged: (value) {
-                setState(() {
-                  _distance = double.tryParse(value) ?? 0;
-                  _calculated = false;
-                });
-              },
-            ),
-            SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _calculateCarbon,
+              ...startPredictions.map(
+                (p) => ListTile(
+                  title: Text(p.description ?? ''),
+                  onTap: () {
+                    _startController.text = p.description!;
+                    setState(() => startPredictions = []);
+                  },
+                ),
+              ),
+              SizedBox(height: 10),
+              Text(
+                'Destination',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              TextField(
+                controller: _destController,
+                onChanged: _onDestChanged,
+                decoration: InputDecoration(hintText: 'Enter destination'),
+              ),
+              ...destPredictions.map(
+                (p) => ListTile(
+                  title: Text(p.description ?? ''),
+                  onTap: () {
+                    _destController.text = p.description!;
+                    setState(() => destPredictions = []);
+                  },
+                ),
+              ),
+              SizedBox(height: 20),
+              Text(
+                'Transport Mode',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: DropdownButton<String>(
+                  value: _transportMode,
+                  isExpanded: true,
+                  underline: SizedBox(),
+                  items:
+                      emissionFactors.keys.map((mode) {
+                        return DropdownMenuItem<String>(
+                          value: mode,
+                          child: Text(mode),
+                        );
+                      }).toList(),
+                  onChanged: (value) => setState(() => _transportMode = value!),
+                ),
+              ),
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _calculateDistance,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Color(0xFF4C6A4F),
                   shape: RoundedRectangleBorder(
@@ -123,18 +209,70 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
                   ),
                   padding: EdgeInsets.symmetric(vertical: 14),
                 ),
-                child: Text('Calculate', style: TextStyle(color: Colors.white)),
+                child: Text(
+                  'Calculate Carbon Footprint',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
-            ),
-            SizedBox(height: 10),
-            Text(
-              'Carbon Output: ${_carbonOutput.toStringAsFixed(2)} kg CO₂',
-              style: TextStyle(fontSize: 16),
-            ),
-            SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
+              SizedBox(height: 10),
+              SizedBox(height: 20),
+              if (_calculated)
+                Card(
+                  color: Color(0xFFE6F0E9),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Calculation Details',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF4C6A4F),
+                          ),
+                        ),
+                        SizedBox(height: 10),
+                        Text(
+                          'Distance traveled: ${_distance.toStringAsFixed(2)} km',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                        SizedBox(height: 6),
+                        Text(
+                          'Transport mode: $_transportMode',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                        SizedBox(height: 6),
+                        Text(
+                          'Estimated carbon output:',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                        Text(
+                          '${_carbonOutput.toStringAsFixed(2)} kg CO₂',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.red[700],
+                          ),
+                        ),
+                        SizedBox(height: 12),
+                        Text(
+                          'This estimate is based on average emission factors per kilometer for the selected transport mode.',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontStyle: FontStyle.italic,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              SizedBox(height: 20),
+              ElevatedButton(
                 onPressed: _calculated ? _addToDiary : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor:
@@ -149,8 +287,8 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
                   style: TextStyle(color: Colors.white),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -17,6 +17,11 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
     _loadEntries();
   }
 
+  Future<void> _addDiaryEntry(WasteDiaryEntry entry) async {
+    await DBHelper.instance.insertWasteDiaryEntry(entry);
+    await _loadEntries();
+  }
+
   Future<void> _loadEntries() async {
     final entries = await DBHelper.instance.getAllWasteDiaryEntries();
     entries.sort((a, b) => b.timestamp.compareTo(a.timestamp));
