@@ -6,8 +6,10 @@ import 'screens/home_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // await resetDB();
   await dotenv.load(fileName: ".env");
+  // Reset db
+  // final dbPath = await getDatabasesPath();
+  // await deleteDatabase(join(dbPath, 'waste_items.db'));
   runApp(CarbonDiaryApp());
 }
 
@@ -21,10 +23,3 @@ class CarbonDiaryApp extends StatelessWidget {
     );
   }
 }
-
-// Future<void> resetDB() async {
-//   final dbPath = await getDatabasesPath();
-//   final path = join(dbPath, 'waste_items.db');
-//   await deleteDatabase(path);
-//   print("✅ Database reset complete");
-// }

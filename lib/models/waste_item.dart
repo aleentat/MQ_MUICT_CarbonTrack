@@ -5,6 +5,8 @@ class WasteItem {
   final String category;
   final String subcategory;
   final String tip;
+  final String iconPath;
+  final String sortingTips;
 
   WasteItem({
     required this.id,
@@ -13,6 +15,8 @@ class WasteItem {
     required this.category,
     required this.subcategory,
     required this.tip,
+    required this.iconPath,
+    required this.sortingTips
   });
 
   Map<String, dynamic> toMap() {
@@ -23,6 +27,8 @@ class WasteItem {
       'category': category,
       'subcategory': subcategory,
       'tip': tip,
+      'iconPath': iconPath,
+      'sortingTips': sortingTips
     };
   }
 
@@ -34,6 +40,8 @@ class WasteItem {
       category: map['category'],
       subcategory: map['subcategory'],
       tip: map['tip'],
+      iconPath: map['iconPath'] ?? '', 
+      sortingTips: map['sortingTips'] ?? '',
     );
   }
 }

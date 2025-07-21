@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_place/google_place.dart';
 import 'package:http/http.dart' as http;
+import '../database/db_helper.dart';
+import '../models/travel_diary_entry.dart';
 
 class TravelCarbonCalculator extends StatefulWidget {
   @override
@@ -21,7 +23,6 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
   double _distance = 0;
   double _carbonOutput = 0;
   bool _calculated = false;
-  final List<String> _demoLog = [];
 
   final Map<String, double> emissionFactors = {
     'Diesel Car': 0.167156448880537,
@@ -34,7 +35,7 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
     'Walk': 0.0,
   };
 
-  @override
+ @override
   void initState() {
     super.initState();
     final apiKey = dotenv.env['GOOGLE_API_KEY'];
@@ -54,14 +55,20 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
     });
   }
 
-  void _addToDiary() {
+  Future<void> _addToDiary() async {
     if (!_calculated) return;
-    String log =
-        '$_transportMode - $_distance km → ${_carbonOutput.toStringAsFixed(2)} kg CO₂';
-    _demoLog.add(log);
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Demo: $log')));
+    final entry = TravelDiaryEntry(
+      mode: _transportMode,
+      distance: _distance,
+      carbon: _carbonOutput,
+      timestamp: DateTime.now(), 
+      startLocation: _startController.text,
+      endLocation: _destController.text,
+    );
+    await DBHelper.instance.insertTravelDiaryEntry(entry);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Added to diary: ${_carbonOutput.toStringAsFixed(2)} kg CO₂')),
+    );
     setState(() {
       _calculated = false;
       _distance = 0;
@@ -72,9 +79,7 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
   }
 
   void _onStartChanged(String value) async {
-    print("Start changed: $value");
     var result = await googlePlace.autocomplete.get(value);
-    print("Result: $result");
     if (result != null && result.predictions != null) {
       setState(() {
         startPredictions = result.predictions!;
@@ -136,10 +141,7 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Start Location',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
+              Text('Start Location', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               TextField(
                 controller: _startController,
                 onChanged: _onStartChanged,
@@ -155,10 +157,7 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
                 ),
               ),
               SizedBox(height: 10),
-              Text(
-                'Destination',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
+              Text('Destination', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               TextField(
                 controller: _destController,
                 onChanged: _onDestChanged,
@@ -174,10 +173,7 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
                 ),
               ),
               SizedBox(height: 20),
-              Text(
-                'Transport Mode',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
+              Text('Transport Mode', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
@@ -189,13 +185,12 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
                   value: _transportMode,
                   isExpanded: true,
                   underline: SizedBox(),
-                  items:
-                      emissionFactors.keys.map((mode) {
-                        return DropdownMenuItem<String>(
-                          value: mode,
-                          child: Text(mode),
-                        );
-                      }).toList(),
+                  items: emissionFactors.keys.map((mode) {
+                    return DropdownMenuItem<String>(
+                      value: mode,
+                      child: Text(mode),
+                    );
+                  }).toList(),
                   onChanged: (value) => setState(() => _transportMode = value!),
                 ),
               ),
@@ -204,69 +199,31 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
                 onPressed: _calculateDistance,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Color(0xFF4C6A4F),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   padding: EdgeInsets.symmetric(vertical: 14),
                 ),
-                child: Text(
-                  'Calculate Carbon Footprint',
-                  style: TextStyle(color: Colors.white),
-                ),
+                child: Text('Calculate Carbon Footprint', style: TextStyle(color: Colors.white)),
               ),
-              SizedBox(height: 10),
               SizedBox(height: 20),
               if (_calculated)
                 Card(
                   color: Color(0xFFE6F0E9),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Calculation Details',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF4C6A4F),
-                          ),
-                        ),
+                        Text('Calculation Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF4C6A4F))),
                         SizedBox(height: 10),
-                        Text(
-                          'Distance traveled: ${_distance.toStringAsFixed(2)} km',
-                          style: TextStyle(fontSize: 16),
-                        ),
+                        Text('Distance traveled: ${_distance.toStringAsFixed(2)} km', style: TextStyle(fontSize: 16)),
                         SizedBox(height: 6),
-                        Text(
-                          'Transport mode: $_transportMode',
-                          style: TextStyle(fontSize: 16),
-                        ),
+                        Text('Transport mode: $_transportMode', style: TextStyle(fontSize: 16)),
                         SizedBox(height: 6),
-                        Text(
-                          'Estimated carbon output:',
-                          style: TextStyle(fontSize: 16),
-                        ),
-                        Text(
-                          '${_carbonOutput.toStringAsFixed(2)} kg CO₂',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.red[700],
-                          ),
-                        ),
+                        Text('Estimated carbon output:', style: TextStyle(fontSize: 16)),
+                        Text('${_carbonOutput.toStringAsFixed(2)} kg CO₂', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.red[700])),
                         SizedBox(height: 12),
-                        Text(
-                          'This estimate is based on average emission factors per kilometer for the selected transport mode.',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontStyle: FontStyle.italic,
-                            color: Colors.grey[700],
-                          ),
-                        ),
+                        Text('This estimate is based on average emission factors per kilometer for the selected transport mode.', style: TextStyle(fontSize: 14, fontStyle: FontStyle.italic, color: Colors.grey[700])),
                       ],
                     ),
                   ),
@@ -275,17 +232,11 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
               ElevatedButton(
                 onPressed: _calculated ? _addToDiary : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                      _calculated ? Color(0xFF4C6A4F) : Colors.grey.shade400,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  backgroundColor: _calculated ? Color(0xFF4C6A4F) : Colors.grey.shade400,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   padding: EdgeInsets.symmetric(vertical: 14),
                 ),
-                child: Text(
-                  'Add to Diary (Demo)',
-                  style: TextStyle(color: Colors.white),
-                ),
+                child: Text('Add to Diary', style: TextStyle(color: Colors.white)),
               ),
             ],
           ),
