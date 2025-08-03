@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import '../database/db_helper.dart';
 import '../models/waste_item.dart';
 import '../models/waste_diary_entry.dart';
+import '../utils/info_popup.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 
 class WasteSortingGuide extends StatefulWidget {
@@ -14,6 +17,7 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
   List<WasteItem> _allItems = [];
   String? _selectedCategory;
   String? _selectedSubcategory;
+  String searchQuery = '';
 
   final Map<String, List<String>> _subcategoryMap = {
     'Plastic': ['Bottle', 'Bag', 'Foam'],
@@ -36,6 +40,21 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
     'Other': 'assets/images/other.png',
     'Symbol Guide': 'assets/images/symbol.png',
   };
+
+  Color getTypeColor(String type) {
+    switch (type) {
+      case 'Recyclable':
+        return const Color.fromARGB(255, 240, 216, 1);
+      case 'Compost':
+        return const Color.fromARGB(255, 79, 205, 85);
+      case 'Trash':
+        return const Color.fromARGB(255, 21, 85, 223);
+      case 'Hazardous':
+        return const Color.fromARGB(255, 255, 7, 7);
+      default:
+        return Colors.grey.shade400;
+    }
+  }
 
   final ImagePicker _picker = ImagePicker();
 
@@ -70,14 +89,19 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
   }
 
   List<WasteItem> getFilteredItems() {
-    return _allItems.where((item) {
-      final matchCategory =
+    if (searchQuery.isNotEmpty) {
+     return _allItems.where((item) =>
+       item.name.toLowerCase().contains(searchQuery.toLowerCase())
+     ).toList();
+    }
+   return _allItems.where((item) {
+     final matchCategory =
           _selectedCategory == null || item.category == _selectedCategory;
-      final matchSubcategory =
+     final matchSubcategory =
           _selectedSubcategory == null ||
-          item.subcategory == _selectedSubcategory;
-      return matchCategory && matchSubcategory;
-    }).toList();
+         item.subcategory == _selectedSubcategory;
+     return matchCategory && matchSubcategory;
+   }).toList();
   }
 
   Future<void> _showAddEntryBottomSheet(WasteItem item) async {
@@ -107,23 +131,42 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Add "${item.name}"',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 5,
+                          margin: const EdgeInsets.only(bottom: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[400],
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      Center(
+                        child: Text(
+                          'Add "${item.name}"',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF4C6A4F),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
 
-                      // Quantity input
+                      // Quantity
                       TextFormField(
                         initialValue: '1',
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Quantity',
-                          border: OutlineInputBorder(),
+                          filled: true,
+                          fillColor: const Color(0xFFFCFAF2),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -143,11 +186,15 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
 
                       const SizedBox(height: 12),
 
-                      // Note input
+                      // Note
                       TextFormField(
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Note (optional)',
-                          border: OutlineInputBorder(),
+                          filled: true,
+                          fillColor: const Color(0xFFFCFAF2),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
                         maxLines: 2,
                         onChanged: (val) {
@@ -162,40 +209,55 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
                         children: [
                           ElevatedButton.icon(
                             onPressed: () async {
-                              final XFile? picked = await _picker.pickImage(
+                              final pickedFile = await _picker.pickImage(
                                 source: ImageSource.gallery,
                               );
-                              if (picked != null) {
+                              if (pickedFile != null) {
+                                final tempImage = File(pickedFile.path);
+                                final savedPath = await saveImagePermanently(
+                                  tempImage,
+                                );
                                 setModalState(() {
-                                  imageFile = File(picked.path);
+                                  imageFile = File(savedPath);
                                 });
                               }
                             },
                             icon: const Icon(Icons.photo),
                             label: const Text('Pick Image'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF4C6A4F),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
                           ),
                           const SizedBox(width: 12),
                           if (imageFile != null)
-                            SizedBox(
-                              width: 50,
-                              height: 50,
-                              child: Image.file(imageFile!, fit: BoxFit.cover),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.file(
+                                imageFile!,
+                                width: 50,
+                                height: 50,
+                                fit: BoxFit.cover,
+                              ),
                             ),
                         ],
                       ),
-
                       const SizedBox(height: 20),
-
-                      // Buttons
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           TextButton(
                             onPressed: () => Navigator.pop(context),
-                            child: const Text('Cancel'),
+                            child: const Text(
+                              'Cancel',
+                              style: TextStyle(color: Colors.black54),
+                            ),
                           ),
                           const SizedBox(width: 8),
-                          ElevatedButton(
+                          ElevatedButton.icon(
                             onPressed: () async {
                               if (_formKey.currentState!.validate()) {
                                 final entry = WasteDiaryEntry(
@@ -217,6 +279,9 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
                                         content: Text(
                                           'Added to diary: ${item.name}',
                                         ),
+                                        backgroundColor: const Color(
+                                          0xFF4C6A4F,
+                                        ),
                                       ),
                                     );
                                   }
@@ -225,7 +290,15 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
                                 }
                               }
                             },
-                            child: const Text('Add'),
+                            icon: const Icon(Icons.check),
+                            label: const Text('Add'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF4C6A4F),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -246,6 +319,17 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
     await _showAddEntryBottomSheet(item);
   }
 
+  Future<String> saveImagePermanently(File image) async {
+    final directory = await getApplicationDocumentsDirectory();
+    final name = p.basename(image.path);
+    final newPath = '${directory.path}/$name';
+
+    if (!File(newPath).existsSync()) {
+      await image.copy(newPath);
+    }
+    return newPath;
+  }
+
   @override
   Widget build(BuildContext context) {
     final filteredItems = getFilteredItems();
@@ -264,10 +348,36 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+          padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 12.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              TextField(
+                onChanged: (value) {
+                  setState(() {
+                    searchQuery = value.trim().toLowerCase();
+                  });
+                },
+                decoration: InputDecoration(
+                  hintText: 'Search waste item...',
+                  prefixIcon: const Icon(Icons.search),
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12.0),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: Color(0xFF4C6A4F)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(
+                      color: Color(0xFF4C6A4F),
+                      width: 2,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
               // Category Grid
               GridView.count(
                 crossAxisCount: 4,
@@ -290,24 +400,63 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(color: const Color(0xFF4C6A4F)),
                           ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                          child: Stack(
                             children: [
-                              Image.asset(
-                                _categoryImages[category]!,
-                                height: 30,
-                                width: 30,
+                              Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Image.asset(
+                                      _categoryImages[category]!,
+                                      height: 30,
+                                      width: 30,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      category,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color:
+                                            isSelected
+                                                ? Colors.white
+                                                : const Color(0xFF4C6A4F),
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                category,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color:
-                                      isSelected
-                                          ? Colors.white
-                                          : const Color(0xFF4C6A4F),
-                                  fontWeight: FontWeight.bold,
+                              // info (i)
+                              Positioned(
+                                top: 4,
+                                right: 4,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    showDialog(
+                                      context: context,
+                                      builder:
+                                          (context) =>
+                                              InfoPopup(category: category),
+                                    );
+                                  },
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color:
+                                          isSelected
+                                              ? Colors.white.withOpacity(0.3)
+                                              : Colors.grey[200],
+                                      shape: BoxShape.circle,
+                                    ),
+                                    padding: const EdgeInsets.all(4),
+                                    child: Icon(
+                                      Icons.info_outline,
+                                      size: 16,
+                                      color:
+                                          isSelected
+                                              ? Colors.white
+                                              : Colors.black54,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ],
@@ -316,9 +465,6 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
                       );
                     }).toList(),
               ),
-
-              const SizedBox(height: 3),
-
               // Subcategory Chips
               if (subcategories.isNotEmpty)
                 SizedBox(
@@ -349,56 +495,61 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
                   ),
                 ),
 
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
 
               // Filtered List
               _selectedCategory == 'Symbol Guide'
-                  ? GridView.builder(
+                  ? ListView.separated(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: filteredItems.length,
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 1.4,
-                          crossAxisSpacing: 10,
-                          mainAxisSpacing: 10,
-                        ),
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
                     itemBuilder: (context, index) {
                       final item = filteredItems[index];
                       return Container(
+                        padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           border: Border.all(color: const Color(0xFF4C6A4F)),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Image.asset(
-                              (item.type),
-                              width: 48,
-                              height: 48,
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              item.name,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
+                            Image.asset(item.type, width: 50, height: 50),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item.name,
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4.0),
+                                    child: Text(
+                                      item.tip,
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.black54,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            if (item.sortingTips != null)
-                              Text(
-                                item.sortingTips!,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.black54,
-                                ),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.add,
+                                color: Color(0xFF4C6A4F),
                               ),
+                              onPressed: () => _addToDiary(item),
+                              tooltip: 'Add to diary',
+                            ),
                           ],
                         ),
                       );
@@ -420,17 +571,94 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
                           border: Border.all(color: const Color(0xFF4C6A4F)),
                         ),
                         child: ListTile(
-                          title: Text(item.name),
-                          subtitle: Text(item.sortingTips ?? ''),
-                          trailing: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF4C6A4F),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(6),
-                              ),
+                          title: Text(
+                            item.name,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
                             ),
-                            child: const Text('Add'),
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 9),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: getTypeColor(
+                                    item.type,
+                                  ).withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.delete,
+                                      size: 18,
+                                      color: getTypeColor(item.type),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    const Text(
+                                      'Type: ',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                                    Flexible(
+                                      child: Text(
+                                        item.type,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                // decoration: BoxDecoration(
+                                //   color: Color(0xFFEEF3EA),
+                                //   borderRadius: BorderRadius.circular(8),
+                                // ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Icon(
+                                      Icons.tips_and_updates,
+                                      size: 16,
+                                      color: Color(0xFF4C6A4F),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        item.tip,
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.black54,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          trailing: IconButton(
+                            icon: const Icon(
+                              Icons.add,
+                              color: Color(0xFF4C6A4F),
+                            ),
                             onPressed: () => _addToDiary(item),
+                            tooltip: 'Add to diary',
                           ),
                         ),
                       );

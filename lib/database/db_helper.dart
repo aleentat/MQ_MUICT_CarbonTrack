@@ -94,7 +94,7 @@ class DBHelper {
     await db.insert('waste_items', {'name': 'Plastic bottle', 'category': 'Plastic', 'subcategory': 'Bottle', 'type': 'Recyclable', 'tip': 'Remove cap and rinse before recycling.'});
     await db.insert('waste_items', {'name': 'Plastic bag', 'category': 'Plastic', 'subcategory': 'Bag', 'type': 'Trash', 'tip': 'Try to reuse before disposal.'});
     await db.insert('waste_items', {'name': 'Styrofoam box', 'category': 'Plastic', 'subcategory': 'Foam', 'type': 'Trash', 'tip': 'Styrofoam is not recyclable in most areas.'});
-    await db.insert('waste_items', {'name': 'Soda bottle', 'category': 'Plastic', 'subcategory': 'Bottle', 'type': 'Recyclable', 'tip': 'Rinse before recycling. Remove cap and label.'});
+    await db.insert('waste_items', {'name': 'Soda bottle', 'category': 'Plastic', 'subcategory': 'Bottle', 'type': 'Recyclable', 'tip': 'Remove cap and rinse before recycling..'});
     await db.insert('waste_items', {'name': 'Milk bottle (plastic)', 'category': 'Plastic', 'subcategory': 'Bottle', 'type': 'Recyclable', 'tip': 'Rinse well before recycling.'});
     await db.insert('waste_items', {'name': 'Snack wrapper', 'category': 'Plastic', 'subcategory': 'Bag', 'type': 'Trash', 'tip': 'Wrappers are usually multi-layered and non-recyclable.'});
     await db.insert('waste_items', {'name': 'Plastic utensils', 'category': 'Plastic', 'subcategory': 'Foam', 'type': 'Trash', 'tip': 'Consider reusable alternatives.'});
@@ -151,17 +151,17 @@ class DBHelper {
     await db.insert('waste_items', {'name': 'Paint can (used)', 'category': 'Other', 'subcategory': 'Hazardous', 'type': 'Hazardous', 'tip': 'Take to hazardous waste collection.'});
   
     // Symbol
-    await db.insert('waste_items', {'name': '♳ PET (1)', 'category': 'Symbol Guide', 'subcategory': 'Recyclable Plastic', 'type': 'assets/images/symbols/plastic_code_1.png', 'tip': 'Used in water or beverage bottles. Recyclable.'});
-    await db.insert('waste_items', {'name': '♴ HDPE (2)', 'category': 'Symbol Guide', 'subcategory': 'Recyclable Plastic', 'type': 'assets/images/symbols/plastic_code_2.png', 'tip': 'Used in shampoo bottles or cleaning product containers. Recyclable.'});
-    await db.insert('waste_items', {'name': '♵ PVC (3)', 'category': 'Symbol Guide', 'subcategory': 'Recyclable Plastic', 'type': 'assets/images/symbols/plastic_code_3.png', 'tip': 'Used in pipes or plastic films. Difficult to recycle.'});
-    await db.insert('waste_items', {'name': '♶ LDPE (4)', 'category': 'Symbol Guide', 'subcategory': 'Recyclable Plastic', 'type': 'assets/images/symbols/plastic_code_4.png', 'tip': 'Used in plastic bags or food wrap. Recyclable in some areas.'});
-    await db.insert('waste_items', {'name': '♷ PP (5)', 'category': 'Symbol Guide', 'subcategory': 'Recyclable Plastic', 'type': 'assets/images/symbols/plastic_code_5.png', 'tip': 'Used in food containers and plastic utensils. Recyclable.'});
-    await db.insert('waste_items', {'name': '♸ PS (6)', 'category': 'Symbol Guide', 'subcategory': 'Recyclable Plastic', 'type': 'assets/images/symbols/plastic_code_6.png', 'tip': 'Used in foam or food packaging. Hard to recycle.'});
-    await db.insert('waste_items', {'name': '♹ Other (7)', 'category': 'Symbol Guide', 'subcategory': 'Recyclable Plastic', 'type': 'assets/images/symbols/plastic_code_7.png', 'tip': 'Other plastics such as PC, ABS. Mostly non-recyclable.'});
-    await db.insert('waste_items', {'name': 'Radioactive', 'category': 'Symbol Guide', 'subcategory': 'Non-Recyclable', 'type': 'assets/images/symbols/radioactive.png', 'tip': 'Handle with extreme caution. Contact specialized hazardous waste facilities or government agency for disposal.'});
-    await db.insert('waste_items', {'name': 'Biohazard', 'category': 'Symbol Guide', 'subcategory': 'Non-Recyclable', 'type': 'assets/images/symbols/biohazard.png', 'tip': 'Dispose through medical waste services. Do not throw in general waste bins.'});
-    await db.insert('waste_items', {'name': 'Flammable', 'category': 'Symbol Guide', 'subcategory': 'Non-Recyclable', 'type': 'assets/images/symbols/flammable.png', 'tip': 'Keep away from heat or flame. Bring to a hazardous waste collection center.'});
-    await db.insert('waste_items', {'name': 'Toxic/Poisonous', 'category': 'Symbol Guide', 'subcategory': 'Non-Recyclable', 'type': 'assets/images/symbols/toxic.png', 'tip': 'Do not dispose in drains or bins. Take to a toxic waste facility or special collection point.'});
+    await db.insert('waste_items', {'name': '♳ PET (1)', 'category': 'Symbol Guide', 'subcategory': 'Recyclable Plastic', 'type': 'plastic_code_1.png', 'tip': 'Used in water or beverage bottles. Recyclable.'});
+    await db.insert('waste_items', {'name': '♴ HDPE (2)', 'category': 'Symbol Guide', 'subcategory': 'Recyclable Plastic', 'type': 'plastic_code_2.png', 'tip': 'Used in shampoo bottles or cleaning product containers. Recyclable.'});
+    await db.insert('waste_items', {'name': '♵ PVC (3)', 'category': 'Symbol Guide', 'subcategory': 'Recyclable Plastic', 'type': 'plastic_code_3.png', 'tip': 'Used in pipes or plastic films. Difficult to recycle.'});
+    await db.insert('waste_items', {'name': '♶ LDPE (4)', 'category': 'Symbol Guide', 'subcategory': 'Recyclable Plastic', 'type': 'plastic_code_4.png', 'tip': 'Used in plastic bags or food wrap. Recyclable in some areas.'});
+    await db.insert('waste_items', {'name': '♷ PP (5)', 'category': 'Symbol Guide', 'subcategory': 'Recyclable Plastic', 'type': 'plastic_code_5.png', 'tip': 'Used in food containers and plastic utensils. Recyclable.'});
+    await db.insert('waste_items', {'name': '♸ PS (6)', 'category': 'Symbol Guide', 'subcategory': 'Non-Recyclable', 'type': 'plastic_code_6.png', 'tip': 'Used in foam or food packaging. -> Hard to recycle.'});
+    await db.insert('waste_items', {'name': '♹ Other (7)', 'category': 'Symbol Guide', 'subcategory': 'Non-Recyclable', 'type': 'plastic_code_7.png', 'tip': 'Other plastics such as PC, ABS. -> Mostly non-recyclable.'});
+    await db.insert('waste_items', {'name': 'Radioactive', 'category': 'Symbol Guide', 'subcategory': 'Non-Recyclable', 'type': 'radioactive.png', 'tip': 'Handle with extreme caution. Contact specialized hazardous waste facilities or government agency for disposal.'});
+    await db.insert('waste_items', {'name': 'Biohazard', 'category': 'Symbol Guide', 'subcategory': 'Non-Recyclable', 'type': 'biohazard.png', 'tip': 'Dispose through medical waste services. Do not throw in general waste bins.'});
+    await db.insert('waste_items', {'name': 'Flammable', 'category': 'Symbol Guide', 'subcategory': 'Non-Recyclable', 'type': 'flammable.png', 'tip': 'Keep away from heat or flame. Bring to a hazardous waste collection center.'});
+    await db.insert('waste_items', {'name': 'Toxic/Poisonous', 'category': 'Symbol Guide', 'subcategory': 'Non-Recyclable', 'type': 'toxic.png', 'tip': 'Do not dispose in drains or bins. Take to a toxic waste facility or special collection point.'});
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -291,7 +291,7 @@ class DBHelper {
     return List.generate(maps.length, (i) => WasteDiaryEntry.fromMap(maps[i]));
   }
 
-  // --------------------------- Waste Diary ---------------------------
+  // --------------------------- Travel Diary ---------------------------
   
   Future<int> insertTravelDiaryEntry(TravelDiaryEntry entry) async {
     final db = await instance.database;
