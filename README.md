@@ -17,3 +17,8 @@ A mobile app that tracks users’ daily carbon emissions based on their activiti
 
 ## Noted
 The current calculations are based on TCCT's sources code and rough research. Once I’ve developed part of the prototype, I will conduct more thorough research and include proper references.
+
+
+## Dependencies
+npm init -y
+npm install express mongoose dotenv cors
