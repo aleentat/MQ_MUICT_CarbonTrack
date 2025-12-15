@@ -3,6 +3,8 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../database/db_helper.dart';
 import 'dart:math';
+import '../models/usage_summary.dart';
+import '../services/api_service.dart';
 
 class StatisticPage extends StatefulWidget {
   const StatisticPage({super.key});
@@ -29,6 +31,45 @@ class _StatisticPageState extends State<StatisticPage> {
     super.initState();
     _loadData();
   }
+
+// SENDING STATISTICS TO BACKEND
+Future<void> _sendCurrentStatistics() async {
+  final dataMap =
+      _selectedDataType == 'Travel' ? travelData : wasteData;
+
+  if (dataMap.isEmpty) return;
+
+  final total = dataMap.values.fold(0.0, (a, b) => a + b);
+  final totalLogs = dataMap.length;
+  final avgDailyCO2 = totalLogs == 0 ? 0.0 : total / totalLogs;
+
+  final summary = UsageSummary(
+    userId: 'anon_user',
+    date: DateTime.now().toIso8601String().split('T').first,
+    totalLogs: totalLogs,
+    avgDailyCO2: avgDailyCO2,
+    ecoScore: _calculateEcoScore(avgDailyCO2),
+  );
+
+  final success = await ApiService.sendSummary(summary);
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(
+        success
+            ? 'Summary sent successfully'
+            : 'Failed to send summary',
+      ),
+    ),
+  );
+}
+
+int _calculateEcoScore(double avgCO2) {
+  if (avgCO2 <= 5) return 0;
+  if (avgCO2 <= 8) return 1;
+  if (avgCO2 <= 12) return 2;
+  return 3;
+}
 
   Future<void> _loadData() async {
     final travelEntries = await DBHelper.instance.getAllTravelDiaryEntries();
@@ -254,8 +295,18 @@ class _StatisticPageState extends State<StatisticPage> {
         title: const Text('Statistics'),
         backgroundColor: const Color(0xFF4C6A4F),
         foregroundColor: Colors.white,
-        actions: [IconButton(icon: Icon(Icons.refresh), onPressed: _loadData)],
-      ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.cloud_upload),
+            tooltip: 'Send summary',
+            onPressed: _sendCurrentStatistics,
+          ),
+          IconButton(
+          icon: const Icon(Icons.refresh),
+          onPressed: _loadData,
+          ),
+          ],
+          ),
       backgroundColor: const Color(0xFFFCFAF2),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
