@@ -5,6 +5,8 @@ import '../database/db_helper.dart';
 import 'dart:math';
 import '../models/usage_summary.dart';
 import '../services/api_service.dart';
+import 'dart:convert';
+
 
 class StatisticPage extends StatefulWidget {
   const StatisticPage({super.key});
@@ -44,7 +46,7 @@ Future<void> _sendCurrentStatistics() async {
   final avgDailyCO2 = totalLogs == 0 ? 0.0 : total / totalLogs;
 
   final summary = UsageSummary(
-    userId: 'anon_user',
+    userId: 'userAt${DateTime.now().millisecondsSinceEpoch}',
     date: DateTime.now().toIso8601String().split('T').first,
     totalLogs: totalLogs,
     avgDailyCO2: avgDailyCO2,
@@ -52,6 +54,10 @@ Future<void> _sendCurrentStatistics() async {
   );
 
   final success = await ApiService.sendSummary(summary);
+  if (!success) {
+    // print error details to console
+    print('Failed to send summary: ${jsonEncode(summary.toJson())}');
+  }
 
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(

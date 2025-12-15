@@ -27,6 +27,11 @@ class ApiService {
           )
           .timeout(_timeout);
 
+        // Print for debugging
+        print('BASE_URL: $_baseUrl');
+        print('Response status: ${response.statusCode}');
+        print('Response body: ${response.body}');
+
       return response.statusCode == 200 ||
           response.statusCode == 201;
     } catch (e) {
