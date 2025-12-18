@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../database/db_helper.dart';
 import '../models/waste_item.dart';
 import '../models/waste_diary_entry.dart';
@@ -146,7 +147,8 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
                       ),
                       Center(
                         child: Text(
-                          'Add "${item.name}"',
+                          'Add "${item.name}"'
+                          'Carbon Emission "${item.ef/1000 * item.unit}"',
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -225,7 +227,7 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
                             icon: const Icon(Icons.photo),
                             label: const Text('Pick Image'),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF4C6A4F),
+                              backgroundColor: const Color(0xFF44765F),
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
@@ -267,6 +269,8 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
                                   quantity: quantity,
                                   note: note,
                                   imagePath: imageFile?.path,
+                                  unit: item.unit,
+                                  carbon: item.ef/1000 * quantity * item.unit,
                                 );
                                 try {
                                   await DBHelper.instance.insertWasteDiaryEntry(
@@ -279,9 +283,7 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
                                         content: Text(
                                           'Added to diary: ${item.name}',
                                         ),
-                                        backgroundColor: const Color(
-                                          0xFF4C6A4F,
-                                        ),
+                                        backgroundColor: const Color(0xFF4C6A4F),
                                       ),
                                     );
                                   }
@@ -293,7 +295,7 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
                             icon: const Icon(Icons.check),
                             label: const Text('Add'),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF4C6A4F),
+                              backgroundColor: const Color(0xFF44765F),
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
@@ -340,10 +342,10 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
             : [];
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFCFAF2),
+      backgroundColor: Color.fromARGB(255, 238, 255, 247),
       appBar: AppBar(
-        title: const Text('Waste Sorting Guide'),
-        backgroundColor: const Color(0xFF4C6A4F),
+        title: Text('Waste Sorting Guide', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 20)),
+        backgroundColor: Color(0xFF44765F),
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(

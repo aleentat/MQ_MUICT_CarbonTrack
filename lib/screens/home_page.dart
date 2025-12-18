@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:intl/intl.dart';
+import 'package:convex_bottom_bar/convex_bottom_bar.dart';
+// import 'package:lottie/lottie.dart';
+import '../database/db_helper.dart';
 import 'carbon_diary_page.dart';
 import 'statistic_page.dart';
 import 'activity_page.dart';
@@ -11,6 +16,35 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
+  double _totalTravelCarbon = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    final travelEntries = await DBHelper.instance.getAllTravelDiaryEntries();
+
+    final now = DateTime.now();
+    final weekStart = now.subtract(Duration(days: now.weekday - 1));
+    final weekEnd = weekStart.add(Duration(days: 6));
+
+    double total = 0.0;
+
+    for (var entry in travelEntries) {
+      final date = entry.timestamp;
+      if (date.isAfter(weekStart.subtract(const Duration(days: 1))) &&
+          date.isBefore(weekEnd.add(const Duration(days: 1)))) {
+        total += entry.carbon ?? 0.0;
+      }
+    }
+
+    setState(() {
+      _totalTravelCarbon = total;
+    });
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -36,41 +70,89 @@ class _HomePageState extends State<HomePage> {
     },
   ];
 
-  final List<String> ecoTips = [
-    "Carry a reusable water bottle instead of buying plastic bottles.",
-    "Bring your own bag when shopping.",
-    "Turn off lights when not in use.",
-    "Use public transportation or bicycle when possible.",
+  final List<Map<String, dynamic>> ecoTips = [
+    {
+      'icon': Icons.directions_bike,
+      'title': 'Bike More',
+      'description': 'Reduce car use by biking to nearby places.',
+    },
+    {
+      'icon': Icons.lightbulb,
+      'title': 'Save Energy',
+      'description': 'Switch off lights when not in use.',
+    },
+    {
+      'icon': Icons.recycling,
+      'title': 'Recycle',
+      'description': 'Separate and recycle your daily waste.',
+    },
+    {
+      'icon': Icons.water_drop,
+      'title': 'Save Water',
+      'description': 'Fix leaking taps and use water wisely.',
+    },
   ];
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFCFAF2),
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: [
-          _buildHomeContent(),
-          ActivityPage(),
-          CarbonDiaryPage(),
-          StatisticPage(),
-        ],
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Color.fromARGB(255, 155, 255, 242),
+            Color.fromARGB(255, 183, 255, 236),
+            Color.fromARGB(255, 230, 252, 252),
+            Color(0xFFFDFDFD),
+          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
       ),
-      bottomNavigationBar: _buildBottomNavBar(),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          // title: Text(
+          //   'Carbon Diary',
+          //   style: TextStyle(fontWeight: FontWeight.bold),
+          // ),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          actions: [
+            IconButton(icon: Icon(Icons.refresh), onPressed: _loadData),
+          ],
+        ),
+        body: AnimatedSwitcher(
+          duration: Duration(milliseconds: 300),
+          child: IndexedStack(
+            key: ValueKey<int>(_selectedIndex),
+            index: _selectedIndex,
+            children: [
+              _buildHomeContent(),
+              ActivityPage(),
+              CarbonDiaryPage(),
+              StatisticPage(),
+            ],
+          ),
+        ),
+        bottomNavigationBar: _buildBottomNavBar(),
+      ),
     );
   }
 
   Widget _buildHomeContent() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20.0),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(height: 50),
           _buildWelcomeSection(),
-          SizedBox(height: 30),
-          _buildTipsSection(),
-          SizedBox(height: 30),
+          const SizedBox(height: 10),
+          _buildEcoScoreBar(),
+          const SizedBox(height: 6),
+          _buildCarbonTipBubble(),
+          const SizedBox(height: 40),
+          _buildTipsSection(ecoTips),
+          const SizedBox(height: 40),
           _buildNewsSection(),
         ],
       ),
@@ -79,11 +161,7 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildWelcomeSection() {
     return Container(
-      decoration: BoxDecoration(
-        color: Color(0xFFDFF3E3),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      padding: EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(15, 0, 15, 15),
       child: Row(
         children: [
           Expanded(
@@ -93,9 +171,12 @@ class _HomePageState extends State<HomePage> {
               children: [
                 Text(
                   'Welcome 👋',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  style: GoogleFonts.poppins(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 Text(
                   'Track your daily carbon footprint and help save the planet together',
                   style: TextStyle(fontSize: 14),
@@ -105,79 +186,235 @@ class _HomePageState extends State<HomePage> {
           ),
           Expanded(
             flex: 1,
-            child: Image.asset(
-              'assets/images/earth.png',
-              height: 80,
-              fit: BoxFit.contain,
-            ),
+            child: Image.asset('assets/gif/earth.gif', height: 150),
+            // child: Lottie.asset(
+            //   'assets/lottie/earth.json',
+            //   height: 100,
+            //   repeat: true,
+            // ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTipsSection() {
+  Widget _buildEcoScoreBar() {
+    final double standardCO2 = 20.0;
+    final bool isBelow = _totalTravelCarbon <= standardCO2;
+
+    DateTime now = DateTime.now();
+    DateTime weekStart = now.subtract(Duration(days: now.weekday - 1));
+    DateTime weekEnd = weekStart.add(const Duration(days: 6));
+    String weekRange =
+        '${DateFormat('d MMM').format(weekStart)} - ${DateFormat('d MMM yyyy').format(weekEnd)}';
+
+    return Container(
+      padding: const EdgeInsets.all(23),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 2)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                'Weekly Travel Score',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text('($weekRange)', style: TextStyle(fontSize: 13)),
+            ],
+          ),
+          const SizedBox(height: 15),
+          Row(
+            children: [
+              Image.asset(
+                isBelow ? 'assets/gif/livetree.gif' : 'assets/gif/deadtree.gif',
+                height: 90,
+                width: 90,
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        color: Colors.grey[300],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: LinearProgressIndicator(
+                          value: (_totalTravelCarbon / standardCO2).clamp(
+                            0.0,
+                            1.0,
+                          ),
+                          color:
+                              isBelow
+                                  ? const Color.fromARGB(255, 76, 175, 134)
+                                  : const Color.fromARGB(255, 226, 83, 73),
+                          backgroundColor: Colors.transparent,
+                          minHeight: 14,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      '${_totalTravelCarbon.toStringAsFixed(2)} kg CO₂ • ${isBelow ? 'Below Standard 🌿' : 'Above Standard ☁️'}',
+                      style: TextStyle(fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCarbonTipBubble() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 0.0, vertical: 12.0),
+      child: Stack(
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 12),
+            padding: const EdgeInsets.all(26),
+            decoration: BoxDecoration(
+              color: const Color.fromARGB(255, 29, 71, 62),
+              borderRadius: BorderRadius.circular(60),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 6,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Text(
+                  "Did you know?",
+                  style: TextStyle(
+                    color: Color.fromARGB(255, 163, 225, 226),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  "Keeping your weekly travel emissions under 20kg of CO₂ is a great way to care for the planet ! ",
+                  style: TextStyle(color: Colors.white, fontSize: 14),
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            left: 58,
+            top: 0,
+            child: CustomPaint(painter: TrianglePainter()),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTipsSection(List<Map<String, dynamic>> ecoTips) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Image.asset('assets/images/tips_icon.png', height: 30),
-            SizedBox(width: 10),
-            Text(
-              'Eco Tips',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-          ],
+        Text(
+          'Eco Tips',
+          style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold),
         ),
-        SizedBox(height: 10),
-        Column(
-          children:
-              ecoTips.map((tip) {
-                return Card(
-                  color: Color.fromARGB(255, 253, 246, 209),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  margin: EdgeInsets.symmetric(vertical: 6),
-                  child: ListTile(
-                    leading: Icon(Icons.eco, color: Colors.green[800]),
-                    title: Text(tip, style: TextStyle(fontSize: 14)),
-                  ),
-                );
-              }).toList(),
+        const SizedBox(height: 15),
+        SizedBox(
+          height: 160,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: ecoTips.length,
+            itemBuilder: (context, index) {
+              final tip = ecoTips[index];
+              return Container(
+                width: 160,
+                margin: const EdgeInsets.only(right: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color.fromARGB(255, 255, 253, 236),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.5),
+                      blurRadius: 6,
+                      offset: const Offset(2, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: const Color.fromARGB(255, 210, 237, 211),
+                      child: Icon(tip['icon'], color: Colors.green[800]),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      tip['title'],
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      tip['description'],
+                      style: TextStyle(fontSize: 13, color: Colors.grey[800]),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         ),
       ],
     );
   }
 
   Widget _buildNewsSection() {
-    return Column( 
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Image.asset('assets/images/news_icon.png', height: 28),
-            SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Environmental News 📰',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
+        Text(
+          'Environmental News',
+          style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold),
         ),
-        SizedBox(height: 10),
-        Column(children: mockNews.map((news) => _buildNewsCard(news)).toList()),
+        const SizedBox(height: 10),
+        Column(children: mockNews.map(_buildNewsCard).toList()),
       ],
     );
   }
 
   Widget _buildNewsCard(Map<String, String> news) {
     return Card(
-      margin: EdgeInsets.symmetric(vertical: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 2,
+      margin: const EdgeInsets.symmetric(vertical: 10),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Colors.green.shade200, width: 1),
+      ),
+      color: const Color(0xFFF5FFF8), 
+      elevation: 3,
+      shadowColor: Colors.green.shade100,
       child: InkWell(
         onTap: () async {
           final url = Uri.parse(news['url'] ?? '');
@@ -188,20 +425,19 @@ class _HomePageState extends State<HomePage> {
         child: Row(
           children: [
             ClipRRect(
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(12),
-                bottomLeft: Radius.circular(12),
+              borderRadius: const BorderRadius.horizontal(
+                left: Radius.circular(16),
               ),
               child: Image.asset(
                 news['image']!,
-                width: 80,
-                height: 80,
+                width: 100,
+                height: 120,
                 fit: BoxFit.cover,
               ),
             ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(12.0),
+                padding: const EdgeInsets.all(14.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -210,12 +446,13 @@ class _HomePageState extends State<HomePage> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
+                        color: Colors.green[900],
                       ),
                     ),
-                    SizedBox(height: 6),
+                    const SizedBox(height: 8),
                     Text(
                       news['summary']!,
-                      style: TextStyle(fontSize: 13),
+                      style: TextStyle(fontSize: 13, color: Colors.grey[800]),
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -223,9 +460,13 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.only(right: 10),
-              child: Icon(Icons.arrow_forward_ios, size: 16),
+            const Padding(
+              padding: EdgeInsets.only(right: 13),
+              child: Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: Colors.green,
+              ),
             ),
           ],
         ),
@@ -234,19 +475,40 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildBottomNavBar() {
-    return BottomNavigationBar(
-      currentIndex: _selectedIndex,
-      onTap: _onItemTapped,
-      selectedItemColor: Colors.blueAccent,
-      unselectedItemColor: Colors.black,
-      showUnselectedLabels: true,
-      type: BottomNavigationBarType.fixed,
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-        BottomNavigationBarItem(icon: Icon(Icons.cases_rounded), label: 'Activity'),
-        BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Diary'),
-        BottomNavigationBarItem(icon: Icon(Icons.pie_chart), label: 'Statistic')
+    return ConvexAppBar(
+      style: TabStyle.reactCircle,
+      backgroundColor: Colors.white,
+      activeColor: Color.fromARGB(255, 96, 176, 158),
+      color: Colors.grey[600],
+      items: [
+        TabItem(icon: Icons.home, title: 'Home'),
+        TabItem(icon: Icons.local_activity, title: 'Activity'),
+        TabItem(icon: Icons.book, title: 'Diary'),
+        TabItem(icon: Icons.bar_chart, title: 'Stats'),
       ],
+      initialActiveIndex: _selectedIndex,
+      onTap: _onItemTapped,
     );
   }
+}
+
+class TrianglePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint =
+        Paint()
+          ..color = Color.fromARGB(255, 29, 71, 62)
+          ..style = PaintingStyle.fill;
+
+    var path = Path();
+    path.moveTo(0, 12);
+    path.lineTo(10, 0);
+    path.lineTo(20, 12);
+    path.close();
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

@@ -6,6 +6,8 @@ class WasteItem {
   final String subcategory;
   final String tip;
   final String iconPath;
+  final double ef; // kgCO2e per ton
+  final double unit; // kg per item
 
   WasteItem({
     required this.id,
@@ -15,6 +17,8 @@ class WasteItem {
     required this.subcategory,
     required this.tip,
     required this.iconPath,
+    required this.ef,
+    required this.unit,
   });
 
   Map<String, dynamic> toMap() {
@@ -26,6 +30,8 @@ class WasteItem {
       'subcategory': subcategory,
       'tip': tip,
       'iconPath': iconPath,
+      'ef': ef,
+      'unit': unit,
     };
   }
 
@@ -38,6 +44,16 @@ class WasteItem {
       subcategory: map['subcategory'],
       tip: map['tip'],
       iconPath: map['iconPath'] ?? '', 
+      ef: double.tryParse(map['ef'].toString()) ?? 0.0,
+      unit: double.tryParse(map['unit'].toString()) ?? 0.0,
     );
   }
+
+  // double emissionsTonForQuantity(double quantity) {
+  //   return emissionFactor * quantity;
+  // }
+
+  // double emissionFactorKgPerUnit() {
+  //   return emissionFactor / 1000.0;
+  // }
 }
