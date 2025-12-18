@@ -44,10 +44,10 @@ class WasteItem {
       subcategory: map['subcategory'],
       tip: map['tip'],
       iconPath: map['iconPath'] ?? '', 
-      ef: map['ef'], 
-      unit: map['unit'], 
-      // ef: double.tryParse(map['ef'].toString()) ?? 0.0,
-      // unit: double.tryParse(map['unit'].toString()) ?? 0.0,
+      // ef: map['ef'], 
+      // unit: map['unit'], 
+      ef: double.tryParse(map['ef'].toString()) ?? 0.0,
+      unit: double.tryParse(map['unit'].toString()) ?? 0.0,
     );
   }
 

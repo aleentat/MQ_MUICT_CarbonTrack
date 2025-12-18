@@ -304,6 +304,15 @@ int _calculateEcoScore(double avgCO2) {
           style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.transparent,
+        actions: [
+        IconButton(
+        icon: const Icon(Icons.upload_file),
+        tooltip: 'Send statistics',
+        onPressed: () async {
+        await _sendCurrentStatistics();
+      },
+    ),
+  ],
       ),
       backgroundColor: Colors.transparent,
       body: Padding(
