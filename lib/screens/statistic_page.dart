@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../database/db_helper.dart';
 import 'dart:math';
@@ -17,7 +18,7 @@ class StatisticPage extends StatefulWidget {
 
 class _StatisticPageState extends State<StatisticPage> {
   String _selectedDataType = 'Travel';
-  String _selectedTimeframe = 'Monthly';
+  String _selectedTimeframe = 'Weekly';
   DateTime _currentViewDate = DateTime.now();
 
   Map<String, double> travelData = {};
@@ -298,58 +299,48 @@ int _calculateEcoScore(double avgCO2) {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Statistics'),
-        backgroundColor: const Color(0xFF4C6A4F),
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.cloud_upload),
-            tooltip: 'Send summary',
-            onPressed: _sendCurrentStatistics,
-          ),
-          IconButton(
-          icon: const Icon(Icons.refresh),
-          onPressed: _loadData,
-          ),
-          ],
-          ),
-      backgroundColor: const Color(0xFFFCFAF2),
+        title: Text(
+          'Statistics',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.transparent,
+      ),
+      backgroundColor: Colors.transparent,
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
+        padding: const EdgeInsets.fromLTRB(20, 5, 20, 20),
+        child: ListView(
           children: [
             Row(
               children: [
                 Expanded(
-                  child: _buildDropdown(
-                    'Type',
-                    _selectedDataType,
-                    dataTypes,
-                    (val) => setState(() => _selectedDataType = val),
+                  child: _buildSegmentedControl(
+                    label: 'Type',
+                    options: dataTypes,
+                    selected: _selectedDataType,
+                    onSelected: (val) {
+                      setState(() => _selectedDataType = val);
+                    },
                   ),
                 ),
-                const SizedBox(width: 15),
                 Expanded(
-                  child: _buildDropdown(
-                    'View',
-                    _selectedTimeframe,
-                    timeframes,
-                    (val) {
-                      setState(() {
-                        _selectedTimeframe = val;
-                      });
+                  child: _buildSegmentedControl(
+                    label: 'View',
+                    options: timeframes,
+                    selected: _selectedTimeframe,
+                    onSelected: (val) {
+                      setState(() => _selectedTimeframe = val);
                       _loadData();
                     },
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 13),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 IconButton(
-                  icon: Icon(Icons.arrow_back),
+                  icon: Icon(Icons.arrow_back, color: Color(0xFF4C6A4F)),
                   onPressed: _goToPreviousPeriod,
                 ),
                 Text(
@@ -357,14 +348,18 @@ int _calculateEcoScore(double avgCO2) {
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 IconButton(
-                  icon: Icon(Icons.arrow_forward),
+                  icon: Icon(Icons.arrow_forward, color: Color(0xFF4C6A4F)),
                   onPressed: _goToNextPeriod,
                 ),
               ],
             ),
-            const SizedBox(height: 25),
-            Expanded(child: _buildBarChart(dataMap)),
-            const SizedBox(height: 30),
+            const SizedBox(height: 20),
+            Container(
+              height: 300,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _buildBarChart(dataMap),
+            ),
+            const SizedBox(height: 10),
             _buildSummaryCard(dataMap, prevMap),
           ],
         ),
@@ -372,35 +367,56 @@ int _calculateEcoScore(double avgCO2) {
     );
   }
 
-  Widget _buildDropdown(
-    String label,
-    String selected,
-    List<String> options,
-    Function(String) onChanged,
-  ) {
+  Widget _buildSegmentedControl({
+    required String label,
+    required List<String> options,
+    required String selected,
+    required Function(String) onSelected,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: Colors.grey.shade300),
-            borderRadius: BorderRadius.circular(10),
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+            color: Color.fromARGB(255, 33, 98, 73),
           ),
-          child: DropdownButton<String>(
-            value: selected,
-            isExpanded: true,
-            underline: const SizedBox(),
-            items:
-                options
-                    .map(
-                      (type) =>
-                          DropdownMenuItem(value: type, child: Text(type)),
-                    )
-                    .toList(),
-            onChanged: (val) => onChanged(val!),
+        ),
+        Container(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: ToggleButtons(
+              isSelected: options.map((e) => e == selected).toList(),
+              onPressed: (index) => onSelected(options[index]),
+              borderRadius: BorderRadius.circular(30),
+              selectedColor: Colors.white,
+              color: const Color(0xFF4C6A4F),
+              fillColor: const Color(0xFF4C6A4F),
+              borderColor: Colors.black,
+              selectedBorderColor: Colors.black,
+              constraints: const BoxConstraints(minHeight: 30, minWidth: 55),
+              textStyle: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+              children:
+                  options.map((e) {
+                    final isSelected = e == selected;
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color:
+                            isSelected ? const Color(0xFF4C6A4F) : Colors.white,
+                      ),
+                      child: Text(e),
+                    );
+                  }).toList(),
+            ),
           ),
         ),
       ],
@@ -430,28 +446,116 @@ int _calculateEcoScore(double avgCO2) {
     final percent = prevTotal == 0 ? 100 : (diff / prevTotal) * 100;
 
     final isIncrease = diff >= 0;
-    final arrow = isIncrease ? '↑' : '↓';
     final unit = _selectedDataType == 'Travel' ? 'kg CO₂' : 'pcs';
+
+    Color diffColor = isIncrease ? Colors.red : Colors.green;
+    Icon diffIcon =
+        isIncrease
+            ? Icon(Icons.arrow_upward, color: diffColor, size: 18)
+            : Icon(Icons.arrow_downward, color: diffColor, size: 18);
+
+    double progress = (avg / (maxVal * 1.2)).clamp(0.0, 1.0);
 
     return Container(
       padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 5)],
+        color: const Color.fromARGB(255, 243, 255, 252),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF4C6A4F), width: 1.5),
+        boxShadow: [
+          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("📍 Highlights", style: TextStyle(fontWeight: FontWeight.bold)),
-          Text("Total: ${total.toStringAsFixed(2)} $unit"),
-          Text("Average: ${avg.toStringAsFixed(2)} $unit"),
-          Text("Max: ${maxVal.toStringAsFixed(2)} $unit"),
-          Text("Min: ${minVal.toStringAsFixed(2)} $unit"),
-          Text("Compared to ${_getPreviousLabel()}: $arrow ${diff.abs().toStringAsFixed(2)} $unit (${percent.abs().toStringAsFixed(1)}%)"),
+          Text(
+            "📍 Highlights",
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              color: Color.fromARGB(255, 34, 70, 43),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 4,
+            runSpacing: 4,
+            children: [
+              Text(
+                "Total: ${total.toStringAsFixed(2)} $unit",
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              diffIcon,
+              Text(
+                "${percent.abs().toStringAsFixed(1)}%",
+                style: TextStyle(color: diffColor, fontWeight: FontWeight.bold),
+              ),
+              Text(
+                "compared to ${_getPreviousLabel()}",
+                style: TextStyle(color: Colors.grey[700], fontSize: 12),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            "Average per unit time: ${avg.toStringAsFixed(2)} $unit",
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 6),
+          LinearProgressIndicator(
+            value: progress,
+            minHeight: 12,
+            backgroundColor: Colors.grey[300],
+            color: Color(0xFF4C6A4F),
+          ),
+          const SizedBox(height: 16),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _miniBarWithLabel("Max", maxVal, maxVal, unit, Colors.redAccent),
+              _miniBarWithLabel("Min", minVal, maxVal, unit, Colors.green),
+            ],
+          ),
         ],
       ),
     );
+  }
+
+  Widget _miniBarWithLabel(
+    String label,
+    double value,
+    double maxValue,
+    String unit,
+    Color color,
+  ) {
+    double barWidth = 100 * (value / maxValue).clamp(0.0, 1.0);
+
+    return Row(
+      children: [
+        Text("$label: ${value.toStringAsFixed(2)} $unit"),
+        const SizedBox(width: 8),
+        Container(
+          width: barWidth,
+          height: 10,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(5),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // double _calculateMaxY(Map<String, double> dataMap) {
+  //   if (dataMap.isEmpty) return 1;
+  //   return dataMap.values.reduce((a, b) => a > b ? a : b);
+  // }
+
+  double _calculateMaxY(Map<String, double> data) {
+    final maxY = data.values.isEmpty ? 0 : data.values.reduce(max);
+    return maxY * 1.3;
   }
 
   Widget _buildBarChart(Map<String, double> dataMap) {
@@ -468,13 +572,13 @@ int _calculateEcoScore(double avgCO2) {
         barRods: [
           BarChartRodData(
             toY: value,
-            color: const Color(0xFF4C6A4F),
+            color: const Color.fromARGB(255, 84, 133, 117),
             width: 16,
             borderRadius: BorderRadius.circular(4),
             backDrawRodData: BackgroundBarChartRodData(
               show: true,
               toY: value * 1.1,
-              color: Colors.grey.shade300,
+              color: Color(0xFFC8E6C9),
             ),
           ),
         ],
@@ -485,9 +589,11 @@ int _calculateEcoScore(double avgCO2) {
       scrollDirection: Axis.horizontal,
       child: SizedBox(
         width: max(labels.length * 30.0, MediaQuery.of(context).size.width),
-        height: 180,
+        height: 200,
         child: BarChart(
           BarChartData(
+            alignment: BarChartAlignment.spaceAround,
+            maxY: _calculateMaxY(dataMap),
             barGroups: barGroups,
             titlesData: FlTitlesData(
               leftTitles: AxisTitles(
@@ -532,7 +638,7 @@ int _calculateEcoScore(double avgCO2) {
             barTouchData: BarTouchData(
               enabled: true,
               touchTooltipData: BarTouchTooltipData(
-                tooltipBgColor: Colors.black87,
+                tooltipBgColor: const Color.fromARGB(221, 38, 60, 58),
                 getTooltipItem: (group, groupIndex, rod, rodIndex) {
                   final value = rod.toY;
                   return BarTooltipItem(

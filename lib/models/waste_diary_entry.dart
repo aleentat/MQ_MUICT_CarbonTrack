@@ -5,6 +5,8 @@ class WasteDiaryEntry {
   final int quantity;
   final String? note;  
   final String? imagePath;
+  final double carbon;
+  final double unit; 
 
   WasteDiaryEntry({
     required this.name,
@@ -13,6 +15,8 @@ class WasteDiaryEntry {
     this.quantity = 1,
     this.note = '',
     this.imagePath,
+    required this.carbon,
+    required this.unit,
   });
 
   Map<String, dynamic> toMap() {
@@ -23,6 +27,8 @@ class WasteDiaryEntry {
       'quantity': quantity,
       'note': note,
       'imagePath': imagePath,
+      'carbon': carbon,
+      'unit': unit,
     };
   }
 
@@ -34,6 +40,8 @@ class WasteDiaryEntry {
       quantity: map['quantity'],
       note: map['note'],
       imagePath: map['imagePath'],
+      carbon: map['carbon'],
+      unit: map['unit'],
     );
   }
 }

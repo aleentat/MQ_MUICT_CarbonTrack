@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'dart:io';
@@ -29,8 +30,8 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
   Future<void> _loadEntries() async {
     final waste = await DBHelper.instance.getAllWasteDiaryEntries();
     final travel = await DBHelper.instance.getAllTravelDiaryEntries();
-    print("🗑️ Loaded ${waste.length} waste entries");
-    print("🚗 Loaded ${travel.length} travel entries");
+    // print("🗑️ Loaded ${waste.length} waste entries");
+    // print("🚗 Loaded ${travel.length} travel entries");
 
     List<UnifiedDiaryEntry> combined = [
       ...waste.map(
@@ -82,109 +83,149 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
       grouped[date]!.add(entry);
     }
 
-    return Scaffold(
-      backgroundColor: Color(0xFFFCFAF2),
-      appBar: AppBar(
-        title: Text('Carbon Diary Log'),
-        backgroundColor: Color(0xFF4C6A4F),
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(icon: Icon(Icons.refresh), onPressed: _loadEntries),
-          IconButton(
-            icon: Icon(Icons.upload_file),
-            tooltip: 'Export DB',
-            onPressed: () async {
-              await DBHelper.instance.exportDatabase();
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(SnackBar(content: Text('Database exported')));
-            },
+    return Container(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: Text(
+            'Carbon Diary Log',
+            style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
           ),
-        ],
-      ),
-      body: Column(
-        children: [
-          _buildCalendar(),
-          SizedBox(height: 10),
-          _buildFilterChips(),
-          SizedBox(height: 10),
-          Expanded(
-            child:
-                _selectedDay == null
-                    ? Center(child: Text("Select a date to view entries"))
-                    : _getFilteredLogsForSelectedDay().isEmpty
-                    ? Center(child: Text("No entries for selected date"))
-                    : ListView(
-                      children: [
-                        _buildDailySummary(_getFilteredLogsForSelectedDay()),
-                        ..._getFilteredLogsForSelectedDay().map((log) {
-                          return log.type == 'waste'
-                              ? _buildWasteCard(log.entry as WasteDiaryEntry)
-                              : _buildTravelCard(log.entry as TravelDiaryEntry);
-                        }).toList(),
-                      ],
-                    ),
-          ),
-        ],
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          foregroundColor: Theme.of(context).colorScheme.onBackground,
+          actions: [
+            IconButton(
+              icon: Icon(Icons.upload_file),
+              tooltip: 'Export DB',
+              onPressed: () async {
+                await DBHelper.instance.exportDatabase();
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text('Database exported')));
+              },
+            ),
+          ],
+        ),
+        body: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 10,
+              ),
+              child: Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Color(0xFF4C6A4F), width: 1.2),
+                  borderRadius: BorderRadius.circular(14),
+                  color: Colors.white.withOpacity(0.85),
+                ),
+                child: Column(children: [_buildCalendar()]),
+              ),
+            ),
+            SizedBox(height: 10),
+            _buildFilterChips(),
+            SizedBox(height: 10),
+            Expanded(
+              child:
+                  _selectedDay == null
+                      ? Center(child: Text("Select a date to view entries"))
+                      : _getFilteredLogsForSelectedDay().isEmpty
+                      ? Center(child: Text("No entries for selected date"))
+                      : ListView(
+                        children: [
+                          _buildDailySummary(_getFilteredLogsForSelectedDay()),
+                          ..._getFilteredLogsForSelectedDay().map((log) {
+                            return log.type == 'waste'
+                                ? _buildWasteCard(log.entry as WasteDiaryEntry)
+                                : _buildTravelCard(
+                                  log.entry as TravelDiaryEntry,
+                                );
+                          }).toList(),
+                        ],
+                      ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildWasteCard(WasteDiaryEntry log) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Card(
-        color: Color(0xFFE8F5E9),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        elevation: 2,
-        child: ListTile(
-          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          leading:
-              log.imagePath != null &&
-                      log.imagePath!.isNotEmpty &&
-                      File(log.imagePath!).existsSync()
-                  ? GestureDetector(
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder:
-                            (_) => Dialog(
-                              backgroundColor: Colors.transparent,
-                              child: InteractiveViewer(
-                                child: Image.file(File(log.imagePath!)),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.blueGrey.shade100),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Card(
+          color: Color(0xFFE8F5E9),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: 2,
+          margin: EdgeInsets.zero,
+          child: ListTile(
+            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            leading:
+                log.imagePath != null &&
+                        log.imagePath!.isNotEmpty &&
+                        File(log.imagePath!).existsSync()
+                    ? GestureDetector(
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder:
+                              (_) => Dialog(
+                                backgroundColor: Colors.transparent,
+                                child: InteractiveViewer(
+                                  child: Image.file(File(log.imagePath!)),
+                                ),
                               ),
-                            ),
-                      );
-                    },
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: SizedBox(
-                        width: 40,
-                        height: 40,
-                        child: Image.file(
-                          File(log.imagePath!),
-                          fit: BoxFit.cover,
+                        );
+                      },
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: SizedBox(
+                          width: 40,
+                          height: 40,
+                          child: Image.file(
+                            File(log.imagePath!),
+                            fit: BoxFit.cover,
+                          ),
                         ),
                       ),
+                    )
+                    : Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      padding: EdgeInsets.all(10),
+                      child: Icon(
+                        Icons.recycling,
+                        color: Color(0xFF4C6A4F),
+                        size: 26,
+                      ),
                     ),
-                  )
-                  : Icon(Icons.recycling, color: Color(0xFF4C6A4F), size: 30),
-          title: Text(
-            log.name,
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-          ),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (log.quantity != null)
-                Text('Qty: ${log.quantity}', style: TextStyle(fontSize: 12)),
-              if (log.note != null && log.note!.isNotEmpty)
-                Text('Note: ${log.note}', style: TextStyle(fontSize: 12)),
-              Text(
-                DateFormat.Hm().format(log.timestamp),
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-              ),
-            ],
+            title: Text(
+              log.name,
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (log.quantity != null)
+                  Text('Qty: ${log.quantity}', style: TextStyle(fontSize: 12)),
+                if (log.note != null && log.note!.isNotEmpty)
+                  Text('Note: ${log.note}', style: TextStyle(fontSize: 12)),
+                Text(
+                  DateFormat.Hm().format(log.timestamp),
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -193,35 +234,51 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
 
   Widget _buildTravelCard(TravelDiaryEntry log) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Card(
-        color: Color(0xFFE3F2FD),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        elevation: 3,
-        child: ListTile(
-          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          leading: Icon(
-            Icons.directions_car_filled,
-            color: Color(0xFF1976D2),
-            size: 30,
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.blueGrey.shade100),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Card(
+          color: Color(0xFFE3F2FD),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
-          title: Text(
-            '${log.startLocation} → ${log.endLocation}',
-            maxLines: 1,
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-          ),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '${log.carbon.toStringAsFixed(2)} kgCO₂ | ${log.distance.toStringAsFixed(1)} km | ${log.mode}',
-                style: TextStyle(fontSize: 12),
+          elevation: 2,
+          margin: EdgeInsets.zero, 
+          child: ListTile(
+            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            leading: Container(
+              decoration: BoxDecoration(
+                color: Colors.white, 
+                shape: BoxShape.circle,
               ),
-              Text(
-                DateFormat.Hm().format(log.timestamp),
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              padding: EdgeInsets.all(10),
+              child: Icon(
+                Icons.directions_car_filled,
+                color: Color(0xFF1976D2),
+                size: 26,
               ),
-            ],
+            ),
+            title: Text(
+              '${log.startLocation} → ${log.endLocation}',
+              maxLines: 1,
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${log.carbon.toStringAsFixed(2)} kgCO₂ | ${log.distance.toStringAsFixed(1)} km | ${log.mode}',
+                  style: TextStyle(fontSize: 12),
+                ),
+                Text(
+                  DateFormat.Hm().format(log.timestamp),
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -231,60 +288,71 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
   Widget _buildDailySummary(List<UnifiedDiaryEntry> logs) {
     int wasteCount = 0; // quantity
     int travelCount = 0; // log
-    double totalCarbon = 0.0;
+    double totalTravelCarbon = 0.0;
+    double totalWasteCarbon = 0.0;
 
     for (var log in logs) {
       if (log.type == 'waste') {
         final wasteEntry = log.entry as WasteDiaryEntry;
-        wasteCount+= wasteEntry.quantity;
+        wasteCount += wasteEntry.quantity;
+        totalWasteCarbon += wasteEntry.carbon;
       } else if (log.type == 'travel') {
         travelCount++;
         final travelEntry = log.entry as TravelDiaryEntry;
-        totalCarbon += travelEntry.carbon;
+        totalTravelCarbon += travelEntry.carbon;
       }
     }
-    return Card(
+    return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Row(
-          children: [
-            Icon(Icons.calendar_today, size: 16, color: Colors.grey[700]),
-            SizedBox(width: 8),
-            Text(
-              '♻️ $wasteCount  |  🚗 $travelCount  |  💨 ${totalCarbon.toStringAsFixed(2)} kgCO₂',
-              style: TextStyle(fontSize: 13),
-            ),
-          ],
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Card(
+        color: const Color.fromARGB(255, 255, 250, 225),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        elevation: 2,
+        margin: EdgeInsets.zero,
+        child: Padding(
+          padding: const EdgeInsets.all(14.0),
+          child: Row(
+            children: [
+              Icon(Icons.summarize, size: 18, color: Colors.blueGrey),
+              SizedBox(width: 12),
+              Text(
+                '♻️ $wasteCount  |  💨 ${totalWasteCarbon.toStringAsFixed(2)} kgCO₂ |  🚗 $travelCount  |  💨 ${totalTravelCarbon.toStringAsFixed(2)} kgCO₂',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildFilterChips() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        ChoiceChip(
-          label: Text("All"),
-          selected: _filter == 'all',
-          onSelected: (_) => setState(() => _filter = 'all'),
-        ),
-        SizedBox(width: 8),
-        ChoiceChip(
-          label: Text("Waste"),
-          selected: _filter == 'waste',
-          onSelected: (_) => setState(() => _filter = 'waste'),
-        ),
-        SizedBox(width: 8),
-        ChoiceChip(
-          label: Text("Travel"),
-          selected: _filter == 'travel',
-          onSelected: (_) => setState(() => _filter = 'travel'),
-        ),
-      ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Wrap(
+        spacing: 10,
+        children: [
+          _buildChip("All", 'all'),
+          _buildChip("Waste", 'waste'),
+          _buildChip("Travel", 'travel'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChip(String label, String value) {
+    return ChoiceChip(
+      label: Text(label, style: GoogleFonts.poppins(fontSize: 13)),
+      selected: _filter == value,
+      selectedColor: Color.fromARGB(255, 72, 130, 96),
+      backgroundColor: Colors.grey.shade100,
+      labelStyle: TextStyle(
+        color: _filter == value ? Colors.white : Colors.black,
+      ),
+      onSelected: (_) => setState(() => _filter = value),
     );
   }
 
@@ -309,20 +377,28 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
           });
         },
         availableCalendarFormats: const {CalendarFormat.month: 'Month'},
-        headerStyle: HeaderStyle(formatButtonVisible: false),
         calendarStyle: CalendarStyle(
           markerDecoration: BoxDecoration(
-            color: Colors.green,
+            color: Color(0xFF4C6A4F),
             shape: BoxShape.circle,
           ),
           todayDecoration: BoxDecoration(
-            color: Colors.blue,
+            color: Color.fromARGB(255, 212, 138, 138),
             shape: BoxShape.circle,
           ),
           selectedDecoration: BoxDecoration(
-            color: Colors.orange,
+            color: Color.fromARGB(255, 82, 118, 153),
             shape: BoxShape.circle,
           ),
+          outsideDaysVisible: false,
+        ),
+        headerStyle: HeaderStyle(
+          titleTextStyle: GoogleFonts.poppins(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+          formatButtonVisible: false,
+          titleCentered: true,
         ),
         calendarBuilders: CalendarBuilders(
           markerBuilder: (context, date, events) {
