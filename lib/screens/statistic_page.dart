@@ -4,6 +4,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../database/db_helper.dart';
 import 'dart:math';
+import '../models/usage_summary.dart';
+import '../services/api_service.dart';
+import 'dart:convert';
+
 
 class StatisticPage extends StatefulWidget {
   const StatisticPage({super.key});
@@ -30,6 +34,49 @@ class _StatisticPageState extends State<StatisticPage> {
     super.initState();
     _loadData();
   }
+
+// SENDING STATISTICS TO BACKEND
+Future<void> _sendCurrentStatistics() async {
+  final dataMap =
+      _selectedDataType == 'Travel' ? travelData : wasteData;
+
+  if (dataMap.isEmpty) return;
+
+  final total = dataMap.values.fold(0.0, (a, b) => a + b);
+  final totalLogs = dataMap.length;
+  final avgDailyCO2 = totalLogs == 0 ? 0.0 : total / totalLogs;
+
+  final summary = UsageSummary(
+    userId: 'userAt${DateTime.now().millisecondsSinceEpoch}',
+    date: DateTime.now().toIso8601String().split('T').first,
+    totalLogs: totalLogs,
+    avgDailyCO2: avgDailyCO2,
+    ecoScore: _calculateEcoScore(avgDailyCO2),
+  );
+
+  final success = await ApiService.sendSummary(summary);
+  if (!success) {
+    // print error details to console
+    print('Failed to send summary: ${jsonEncode(summary.toJson())}');
+  }
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(
+        success
+            ? 'Summary sent successfully'
+            : 'Failed to send summary',
+      ),
+    ),
+  );
+}
+
+int _calculateEcoScore(double avgCO2) {
+  if (avgCO2 <= 5) return 0;
+  if (avgCO2 <= 8) return 1;
+  if (avgCO2 <= 12) return 2;
+  return 3;
+}
 
   Future<void> _loadData() async {
     final travelEntries = await DBHelper.instance.getAllTravelDiaryEntries();
