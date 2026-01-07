@@ -42,17 +42,18 @@ Future<void> _sendCurrentStatistics() async {
 
   if (dataMap.isEmpty) return;
 
-  final total = dataMap.values.fold(0.0, (a, b) => a + b);
   final totalLogs = dataMap.length;
-  final avgDailyCO2 = totalLogs == 0 ? 0.0 : total / totalLogs;
+  final totalDailyCO2 = dataMap.values.fold(0.0, (a, b) => a + b);
 
   final summary = UsageSummary(
     userId: 'userAt${DateTime.now().millisecondsSinceEpoch}',
     date: DateTime.now().toIso8601String().split('T').first,
     totalLogs: totalLogs,
-    avgDailyCO2: avgDailyCO2,
-    ecoScore: _calculateEcoScore(avgDailyCO2),
+    totalDailyCO2: totalDailyCO2,
+    ecoScore: _calculateEcoScore(totalDailyCO2),
   );
+  print(totalDailyCO2);
+  print("--------------------");
 
   final success = await ApiService.sendSummary(summary);
   if (!success) {
@@ -71,11 +72,13 @@ Future<void> _sendCurrentStatistics() async {
   );
 }
 
-int _calculateEcoScore(double avgCO2) {
-  if (avgCO2 <= 5) return 0;
-  if (avgCO2 <= 8) return 1;
-  if (avgCO2 <= 12) return 2;
-  return 3;
+int _calculateEcoScore(double totalCO2) {
+  if (totalCO2 >= 20.494) return -2;
+  if (totalCO2 < 20.494 && totalCO2 >= 11.784) return -1;
+  if (totalCO2 < 11.784 && totalCO2 >= 8.701) return 0;
+  if (totalCO2 < 8.701 && totalCO2 >= 5.124) return 1;
+  if (totalCO2 < 5.124 && totalCO2 > 0) return 2;
+  return 0;
 }
 
   Future<void> _loadData() async {
@@ -100,10 +103,10 @@ int _calculateEcoScore(double avgCO2) {
     for (var entry in wasteEntries) {
       if (_isInRange(entry.timestamp, _currentViewDate)) {
         final key = _formatKey(entry.timestamp);
-        newWasteData[key] = (newWasteData[key] ?? 0) + entry.quantity;
+        newWasteData[key] = (newWasteData[key] ?? 0) + entry.carbon;
       } else if (_isInRange(entry.timestamp, _getPreviousViewDate())) {
         final key = _formatKey(entry.timestamp);
-        oldWasteData[key] = (oldWasteData[key] ?? 0) + entry.quantity;
+        oldWasteData[key] = (oldWasteData[key] ?? 0) + entry.carbon;
       }
     }
 
@@ -455,7 +458,7 @@ int _calculateEcoScore(double avgCO2) {
     final percent = prevTotal == 0 ? 100 : (diff / prevTotal) * 100;
 
     final isIncrease = diff >= 0;
-    final unit = _selectedDataType == 'Travel' ? 'kg CO₂' : 'pcs';
+    final unit = 'kg CO₂';
 
     Color diffColor = isIncrease ? Colors.red : Colors.green;
     Icon diffIcon =
@@ -610,7 +613,7 @@ int _calculateEcoScore(double avgCO2) {
                   showTitles: true,
                   reservedSize: 40,
                   getTitlesWidget: (value, meta) {
-                    String unit = _selectedDataType == 'Travel' ? 'kg' : 'pcs';
+                    String unit = 'kg CO₂';
                     return Text(
                       '${value.toInt()} $unit',
                       style: TextStyle(fontSize: 10),

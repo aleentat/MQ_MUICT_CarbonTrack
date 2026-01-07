@@ -218,6 +218,7 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
               children: [
                 if (log.quantity != null)
                   Text('Qty: ${log.quantity}', style: TextStyle(fontSize: 12)),
+                  Text('Carbon: ${log.carbon}', style: TextStyle(fontSize: 12)),
                 if (log.note != null && log.note!.isNotEmpty)
                   Text('Note: ${log.note}', style: TextStyle(fontSize: 12)),
                 Text(
@@ -319,7 +320,7 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
               Icon(Icons.summarize, size: 18, color: Colors.blueGrey),
               SizedBox(width: 12),
               Text(
-                '♻️ $wasteCount  |  💨 ${totalWasteCarbon.toStringAsFixed(2)} kgCO₂ |  🚗 $travelCount  |  💨 ${totalTravelCarbon.toStringAsFixed(2)} kgCO₂',
+                '♻️ $wasteCount  💨 ${totalWasteCarbon.toStringAsFixed(4)} kgCO₂  ||  🚗 $travelCount  💨 ${totalTravelCarbon.toStringAsFixed(2)} kgCO₂',
                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
               ),
             ],

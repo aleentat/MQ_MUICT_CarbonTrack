@@ -2,14 +2,14 @@ class UsageSummary {
   final String userId;
   final String date;
   final int totalLogs;
-  final double avgDailyCO2;
+  final double totalDailyCO2;
   final int ecoScore;
 
   UsageSummary({
     required this.userId,
     required this.date,
     required this.totalLogs,
-    required this.avgDailyCO2,
+    required this.totalDailyCO2,
     required this.ecoScore,
   });
 
@@ -17,7 +17,7 @@ class UsageSummary {
         'userId': userId,
         'date': date,
         'totalLogs': totalLogs,
-        'avgDailyCO2': avgDailyCO2,
+        'totalDailyCO2': totalDailyCO2,
         'ecoScore': ecoScore,
       };
 }

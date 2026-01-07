@@ -17,13 +17,15 @@ class ApiService {
     }
 
     try {
+      final body = jsonEncode(summary.toJson());
+      print('Sending summary: $body');
       final response = await http
           .post(
             Uri.parse('$_baseUrl/api/usage-summary'),
             headers: const {
               'Content-Type': 'application/json',
             },
-            body: jsonEncode(summary.toJson()),
+            body: body,
           )
           .timeout(_timeout);
 

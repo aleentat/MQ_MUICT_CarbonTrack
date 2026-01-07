@@ -147,7 +147,7 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
                       ),
                       Center(
                         child: Text(
-                          'Add "${item.name}"\nCarbon Emission: ${item.ef/1000 * item.unit} kgCO2e',
+                          'Add "${item.name}"\nCarbon Emission: ${item.ef * item.unit} gCO2e',
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
