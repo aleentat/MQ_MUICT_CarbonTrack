@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:dotted_line/dotted_line.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_place/google_place.dart';
@@ -21,7 +20,6 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
   List<AutocompletePrediction> startPredictions = [];
   List<AutocompletePrediction> destPredictions = [];
 
-  String _transportMode = 'Diesel Car';
   double _distance = 0;
   double _carbonOutput = 0;
   bool _calculated = false;
@@ -178,7 +176,7 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
   TextStyle headingStyle = GoogleFonts.poppins(
     fontSize: 16,
     fontWeight: FontWeight.bold,
-    color: Color(0xFF44765F),
+    color: Color.fromARGB(255, 40, 69, 45),
   );
   TextStyle labelStyle = TextStyle(fontSize: 15, color: Colors.black87);
 
@@ -291,241 +289,223 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
     );
   }
 
+  Widget _buildHeaderCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: _cardDecoration(),
+      child: Row(
+        children: [
+          Image.asset('assets/gif/travel.gif', height: 90),
+          const SizedBox(width: 15),
+          Expanded(
+            child: Text(
+              'Track your travel footprint 🚗\nEvery trip counts',
+              style: GoogleFonts.poppins(fontSize: 15),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLocationCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: _cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('From & To', style: headingStyle),
+          const SizedBox(height: 15),
+          _buildLocationField(
+            _startController,
+            _onStartChanged,
+            startPredictions,
+          ),
+          const SizedBox(height: 20),
+          _buildLocationField(_destController, _onDestChanged, destPredictions),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVehicleCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: _cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Vehicle Type', style: headingStyle),
+          const SizedBox(height: 15),
+          _buildVehicleTypeSelector(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSubtypeCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: _cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Vehicle Detail', style: headingStyle),
+          const SizedBox(height: 12),
+          DropdownButton<String>(
+            value: _subType,
+            isExpanded: true,
+            underline: SizedBox(),
+            items:
+                vehicleOptions[_vehicleType]!.keys.map((subtype) {
+                  return DropdownMenuItem(value: subtype, child: Text(subtype));
+                }).toList(),
+            onChanged: (value) => setState(() => _subType = value!),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCalculateButton() {
+    return Center(
+      child: ElevatedButton(
+        onPressed: _calculateDistance,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color.fromARGB(255, 29, 71, 62),
+          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
+        ),
+        child: Text(
+          'Calculate Carbon',
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResultCard() {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      elevation: 4,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Calculation Result',
+              style: GoogleFonts.poppins(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text('🛣 Distance: ${_distance.toStringAsFixed(2)} km'),
+            Text('🚗 Mode: $_vehicleType ($_subType)'),
+            const SizedBox(height: 10),
+            Text(
+              '${_carbonOutput.toStringAsFixed(2)} kg CO₂',
+              style: GoogleFonts.poppins(
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
+                color: const Color.fromARGB(255, 226, 83, 73),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAddDiaryButton() {
+    return Center(
+      child: ElevatedButton(
+        onPressed: _addToDiary,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color.fromARGB(255, 76, 175, 134),
+          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
+        ),
+        child: Text(
+          'Add to Diary',
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+
+  BoxDecoration _cardDecoration() {
+    return BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: [
+        BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Color.fromARGB(255, 238, 255, 247),
-      appBar: AppBar(
-        title: Text(
-          'Travel Carbon Calculator',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 20),
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Color.fromARGB(255, 155, 255, 242),
+            Color.fromARGB(255, 183, 255, 236),
+            Color.fromARGB(255, 230, 252, 252),
+            Color(0xFFFDFDFD),
+          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
         ),
-        backgroundColor: Color(0xFF44765F),
-        foregroundColor: Colors.white,
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 30.0, vertical: 20.0),
-        child: SingleChildScrollView(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          foregroundColor: Colors.black,
+          title: Text(
+            'Travel Calculator',
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.bold,
+              fontSize: 22,
+            ),
+          ),
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Column(
-                    children: [
-                      Image.asset(
-                        'assets/images/location.png',
-                        height: 30,
-                        width: 30,
-                      ),
-                      Container(
-                        height: 65,
-                        child: DottedLine(
-                          direction: Axis.vertical,
-                          dashLength: 6,
-                          dashGapLength: 4,
-                          lineThickness: 2,
-                          dashColor: Colors.grey,
-                        ),
-                      ),
-                      Image.asset(
-                        'assets/images/location.png',
-                        height: 30,
-                        width: 30,
-                      ),
-                    ],
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Start Location', style: headingStyle),
-                        _buildLocationField(
-                          _startController,
-                          _onStartChanged,
-                          startPredictions,
-                        ),
-                        SizedBox(height: 25),
-                        Text('Destination', style: headingStyle),
-                        _buildLocationField(
-                          _destController,
-                          _onDestChanged,
-                          destPredictions,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 30),
-              // Vehicle Type Dropdown
-              Text('Vehicle Type', style: headingStyle),
-              SizedBox(height: 12),
-              Container(
-                padding: EdgeInsets.all(10),
-
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.15),
-                      blurRadius: 8,
-                      offset: Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [_buildVehicleTypeSelector()],
-                ),
-              ),
-              SizedBox(height: 25),
-              // Subtype Dropdown
-              Text('Vehicle Detail', style: headingStyle),
-              SizedBox(height: 12),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                margin: EdgeInsets.only(bottom: 30),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.15),
-                      blurRadius: 8,
-                      offset: Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade300),
-                        borderRadius: BorderRadius.circular(12),
-                        color: Colors.white,
-                      ),
-                      child: DropdownButton<String>(
-                        value: _subType,
-                        isExpanded: true,
-                        underline: SizedBox(),
-                        items:
-                            vehicleOptions[_vehicleType]!.keys.map((subtype) {
-                              return DropdownMenuItem<String>(
-                                value: subtype,
-                                child: Text(subtype, style: labelStyle),
-                              );
-                            }).toList(),
-                        onChanged: (value) {
-                          setState(() => _subType = value!);
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(height: 10),
-              Center(
-                child: ElevatedButton.icon(
-                  onPressed: _calculateDistance,
-                  label: Text(
-                    'Calculate',
-                    style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF44765F),
-                    foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                  ),
-                ),
-              ),
+              _buildHeaderCard(),
+              const SizedBox(height: 25),
+              _buildLocationCard(),
+              const SizedBox(height: 25),
+              _buildVehicleCard(),
+              const SizedBox(height: 25),
+              _buildSubtypeCard(),
+              const SizedBox(height: 30),
+              _buildCalculateButton(),
               if (_calculated) ...[
-                SizedBox(height: 20),
-                Center(
-                  child: Card(
-                    color: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                    elevation: 4,
-                    shadowColor: Colors.green.shade100,
-                    child: Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Calculation Result',
-                            style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 20,
-                              color: Color.fromARGB(255, 46, 83, 53),
-                            ),
-                          ),
-                          SizedBox(height: 12),
-                          Text(
-                            '🛣️ Distance: ${_distance.toStringAsFixed(2)} km',
-                            style: labelStyle.copyWith(fontSize: 16),
-                          ),
-                          Text(
-                            '🚗 Mode: $_vehicleType ($_subType)',
-                            style: labelStyle.copyWith(fontSize: 16),
-                          ),
-                          SizedBox(height: 10),
-                          Text(
-                            '🌍 Carbon Emission:',
-                            style: labelStyle.copyWith(fontSize: 16),
-                          ),
-                          SizedBox(height: 5),
-                          Text(
-                            '${_carbonOutput.toStringAsFixed(2)} kg CO₂',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFFBC4749),
-                              shadows: [
-                                Shadow(
-                                  color: Colors.red.shade200,
-                                  offset: Offset(1, 1),
-                                  blurRadius: 4,
-                                ),
-                              ],
-                            ),
-                          ),
-                          SizedBox(height: 12),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
+                const SizedBox(height: 30),
+                _buildResultCard(),
+                const SizedBox(height: 20),
+                _buildAddDiaryButton(),
               ],
-              SizedBox(height: 20),
-              Center(
-                child: ElevatedButton.icon(
-                  onPressed: _calculated ? _addToDiary : null,
-                  label: Text(
-                    'Add to Diary',
-                    style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                        _calculated ? Color(0xFF44765F) : Colors.grey.shade400,
-                    foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                  ),
-                ),
-              ),
             ],
           ),
         ),

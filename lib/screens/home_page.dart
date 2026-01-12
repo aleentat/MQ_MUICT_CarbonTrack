@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
 import 'package:convex_bottom_bar/convex_bottom_bar.dart';
-// import 'package:lottie/lottie.dart';
 import '../database/db_helper.dart';
 import 'carbon_diary_page.dart';
 import 'statistic_page.dart';

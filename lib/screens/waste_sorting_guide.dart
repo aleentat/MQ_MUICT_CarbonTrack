@@ -91,18 +91,21 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
 
   List<WasteItem> getFilteredItems() {
     if (searchQuery.isNotEmpty) {
-     return _allItems.where((item) =>
-       item.name.toLowerCase().contains(searchQuery.toLowerCase())
-     ).toList();
+      return _allItems
+          .where(
+            (item) =>
+                item.name.toLowerCase().contains(searchQuery.toLowerCase()),
+          )
+          .toList();
     }
-   return _allItems.where((item) {
-     final matchCategory =
+    return _allItems.where((item) {
+      final matchCategory =
           _selectedCategory == null || item.category == _selectedCategory;
-     final matchSubcategory =
+      final matchSubcategory =
           _selectedSubcategory == null ||
-         item.subcategory == _selectedSubcategory;
-     return matchCategory && matchSubcategory;
-   }).toList();
+          item.subcategory == _selectedSubcategory;
+      return matchCategory && matchSubcategory;
+    }).toList();
   }
 
   Future<void> _showAddEntryBottomSheet(WasteItem item) async {
@@ -269,7 +272,7 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
                                   note: note,
                                   imagePath: imageFile?.path,
                                   unit: item.unit,
-                                  carbon: item.ef/1000 * quantity * item.unit,
+                                  carbon: item.ef / 1000 * quantity * item.unit,
                                 );
                                 try {
                                   await DBHelper.instance.insertWasteDiaryEntry(
@@ -282,7 +285,9 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
                                         content: Text(
                                           'Added to diary: ${item.name}',
                                         ),
-                                        backgroundColor: const Color(0xFF4C6A4F),
+                                        backgroundColor: const Color(
+                                          0xFF4C6A4F,
+                                        ),
                                       ),
                                     );
                                   }
@@ -331,6 +336,31 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
     return newPath;
   }
 
+  Widget _buildHeaderCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+        ],
+      ),
+      child: Row(
+        children: [
+          Image.asset('assets/gif/waste.gif', height: 90),
+          const SizedBox(width: 15),
+          Expanded(
+            child: Text(
+              'Track your travel footprint 🚗\nEvery trip counts',
+              style: GoogleFonts.poppins(fontSize: 15),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final filteredItems = getFilteredItems();
@@ -339,311 +369,229 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
         _selectedCategory != null
             ? _subcategoryMap[_selectedCategory!] ?? []
             : [];
-
-    return Scaffold(
-      backgroundColor: Color.fromARGB(255, 238, 255, 247),
-      appBar: AppBar(
-        title: Text('Waste Sorting Guide', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 20)),
-        backgroundColor: Color(0xFF44765F),
-        foregroundColor: Colors.white,
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Color.fromARGB(255, 155, 255, 242),
+            Color.fromARGB(255, 183, 255, 236),
+            Color.fromARGB(255, 230, 252, 252),
+            Color(0xFFFDFDFD),
+          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 12.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextField(
-                onChanged: (value) {
-                  setState(() {
-                    searchQuery = value.trim().toLowerCase();
-                  });
-                },
-                decoration: InputDecoration(
-                  hintText: 'Search waste item...',
-                  prefixIcon: const Icon(Icons.search),
-                  filled: true,
-                  fillColor: Colors.white,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 12.0),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: Color(0xFF4C6A4F)),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(
-                      color: Color(0xFF4C6A4F),
-                      width: 2,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          foregroundColor: Colors.black,
+          title: Text(
+            'Waste Calculator',
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.bold,
+              fontSize: 22,
+            ),
+          ),
+        ),
+        body: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 14.0,
+              vertical: 12.0,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeaderCard(),
+                const SizedBox(height: 25),
+                TextField(
+                  onChanged: (value) {
+                    setState(() {
+                      searchQuery = value.trim().toLowerCase();
+                    });
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'Search waste item...',
+                    prefixIcon: const Icon(Icons.search),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 12.0),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Color(0xFF4C6A4F)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(
+                        color: Color(0xFF4C6A4F),
+                        width: 2,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              // Category Grid
-              GridView.count(
-                crossAxisCount: 4,
-                childAspectRatio: 0.85,
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 10,
-                physics: const NeverScrollableScrollPhysics(),
-                shrinkWrap: true,
-                children:
-                    categories.map((category) {
-                      final isSelected = _selectedCategory == category;
-                      return GestureDetector(
-                        onTap: () => _onCategorySelected(category),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color:
-                                isSelected
-                                    ? const Color(0xFF4C6A4F)
-                                    : Colors.white,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFF4C6A4F)),
-                          ),
-                          child: Stack(
-                            children: [
-                              Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Image.asset(
-                                      _categoryImages[category]!,
-                                      height: 30,
-                                      width: 30,
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      category,
-                                      style: TextStyle(
-                                        fontSize: 12,
+                const SizedBox(height: 16),
+                // Category Grid
+                GridView.count(
+                  crossAxisCount: 4,
+                  childAspectRatio: 0.85,
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
+                  physics: const NeverScrollableScrollPhysics(),
+                  shrinkWrap: true,
+                  children:
+                      categories.map((category) {
+                        final isSelected = _selectedCategory == category;
+                        return GestureDetector(
+                          onTap: () => _onCategorySelected(category),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color:
+                                  isSelected
+                                      ? const Color(0xFF4C6A4F)
+                                      : Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: const Color(0xFF4C6A4F),
+                              ),
+                            ),
+                            child: Stack(
+                              children: [
+                                Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Image.asset(
+                                        _categoryImages[category]!,
+                                        height: 30,
+                                        width: 30,
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        category,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color:
+                                              isSelected
+                                                  ? Colors.white
+                                                  : const Color(0xFF4C6A4F),
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // info (i)
+                                Positioned(
+                                  top: 4,
+                                  right: 4,
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      showDialog(
+                                        context: context,
+                                        builder:
+                                            (context) =>
+                                                InfoPopup(category: category),
+                                      );
+                                    },
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color:
+                                            isSelected
+                                                ? Colors.white.withOpacity(0.3)
+                                                : Colors.grey[200],
+                                        shape: BoxShape.circle,
+                                      ),
+                                      padding: const EdgeInsets.all(4),
+                                      child: Icon(
+                                        Icons.info_outline,
+                                        size: 16,
                                         color:
                                             isSelected
                                                 ? Colors.white
-                                                : const Color(0xFF4C6A4F),
+                                                : Colors.black54,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                ),
+                // Subcategory Chips
+                if (subcategories.isNotEmpty)
+                  SizedBox(
+                    height: 45,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: subcategories.length,
+                      itemBuilder: (context, index) {
+                        final sub = subcategories[index];
+                        final isSelected = _selectedSubcategory == sub;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8.0),
+                          child: ChoiceChip(
+                            label: Text(
+                              sub,
+                              style: const TextStyle(fontSize: 13),
+                            ),
+                            selected: isSelected,
+                            onSelected: (_) => _onSubcategorySelected(sub),
+                            selectedColor: const Color(0xFF4C6A4F),
+                            backgroundColor: Colors.white,
+                            labelStyle: TextStyle(
+                              color: isSelected ? Colors.white : Colors.black,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+
+                const SizedBox(height: 12),
+
+                // Filtered List
+                _selectedCategory == 'Symbol Guide'
+                    ? ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: filteredItems.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        final item = filteredItems[index];
+                        return Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border.all(color: const Color(0xFF4C6A4F)),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Image.asset(item.type, width: 50, height: 50),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item.name,
+                                      style: const TextStyle(
+                                        fontSize: 15,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                  ],
-                                ),
-                              ),
-                              // info (i)
-                              Positioned(
-                                top: 4,
-                                right: 4,
-                                child: GestureDetector(
-                                  onTap: () {
-                                    showDialog(
-                                      context: context,
-                                      builder:
-                                          (context) =>
-                                              InfoPopup(category: category),
-                                    );
-                                  },
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color:
-                                          isSelected
-                                              ? Colors.white.withOpacity(0.3)
-                                              : Colors.grey[200],
-                                      shape: BoxShape.circle,
-                                    ),
-                                    padding: const EdgeInsets.all(4),
-                                    child: Icon(
-                                      Icons.info_outline,
-                                      size: 16,
-                                      color:
-                                          isSelected
-                                              ? Colors.white
-                                              : Colors.black54,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }).toList(),
-              ),
-              // Subcategory Chips
-              if (subcategories.isNotEmpty)
-                SizedBox(
-                  height: 45,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: subcategories.length,
-                    itemBuilder: (context, index) {
-                      final sub = subcategories[index];
-                      final isSelected = _selectedSubcategory == sub;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8.0),
-                        child: ChoiceChip(
-                          label: Text(
-                            sub,
-                            style: const TextStyle(fontSize: 13),
-                          ),
-                          selected: isSelected,
-                          onSelected: (_) => _onSubcategorySelected(sub),
-                          selectedColor: const Color(0xFF4C6A4F),
-                          backgroundColor: Colors.white,
-                          labelStyle: TextStyle(
-                            color: isSelected ? Colors.white : Colors.black,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-
-              const SizedBox(height: 12),
-
-              // Filtered List
-              _selectedCategory == 'Symbol Guide'
-                  ? ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: filteredItems.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (context, index) {
-                      final item = filteredItems[index];
-                      return Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border.all(color: const Color(0xFF4C6A4F)),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Image.asset(item.type, width: 50, height: 50),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    item.name,
-                                    style: const TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 4.0),
-                                    child: Text(
-                                      item.tip,
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        color: Colors.black54,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            IconButton(
-                              icon: const Icon(
-                                Icons.add,
-                                color: Color(0xFF4C6A4F),
-                              ),
-                              onPressed: () => _addToDiary(item),
-                              tooltip: 'Add to diary',
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  )
-                  : filteredItems.isEmpty
-                  ? const Center(child: Text('No items found.'))
-                  : ListView.separated(
-                    itemCount: filteredItems.length,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    separatorBuilder: (_, __) => const SizedBox(height: 6),
-                    itemBuilder: (context, index) {
-                      final item = filteredItems[index];
-                      return Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          color: Colors.white,
-                          border: Border.all(color: const Color(0xFF4C6A4F)),
-                        ),
-                        child: ListTile(
-                          title: Text(
-                            item.name,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const SizedBox(height: 9),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: getTypeColor(
-                                    item.type,
-                                  ).withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.delete,
-                                      size: 18,
-                                      color: getTypeColor(item.type),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    const Text(
-                                      'Type: ',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: Colors.black,
-                                      ),
-                                    ),
-                                    Flexible(
-                                      child: Text(
-                                        item.type,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          fontSize: 13,
-                                          color: Colors.black,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                // decoration: BoxDecoration(
-                                //   color: Color(0xFFEEF3EA),
-                                //   borderRadius: BorderRadius.circular(8),
-                                // ),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Icon(
-                                      Icons.tips_and_updates,
-                                      size: 16,
-                                      color: Color(0xFF4C6A4F),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Expanded(
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 4.0),
                                       child: Text(
                                         item.tip,
                                         style: const TextStyle(
-                                          fontSize: 12,
+                                          fontSize: 13,
                                           color: Colors.black54,
                                         ),
                                       ),
@@ -651,21 +599,131 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
                                   ],
                                 ),
                               ),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.add,
+                                  color: Color(0xFF4C6A4F),
+                                ),
+                                onPressed: () => _addToDiary(item),
+                                tooltip: 'Add to diary',
+                              ),
                             ],
                           ),
-                          trailing: IconButton(
-                            icon: const Icon(
-                              Icons.add,
-                              color: Color(0xFF4C6A4F),
-                            ),
-                            onPressed: () => _addToDiary(item),
-                            tooltip: 'Add to diary',
+                        );
+                      },
+                    )
+                    : filteredItems.isEmpty
+                    ? const Center(child: Text('No items found.'))
+                    : ListView.separated(
+                      itemCount: filteredItems.length,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      separatorBuilder: (_, __) => const SizedBox(height: 6),
+                      itemBuilder: (context, index) {
+                        final item = filteredItems[index];
+                        return Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            color: Colors.white,
+                            border: Border.all(color: const Color(0xFF4C6A4F)),
                           ),
-                        ),
-                      );
-                    },
-                  ),
-            ],
+                          child: ListTile(
+                            title: Text(
+                              item.name,
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(height: 9),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: getTypeColor(
+                                      item.type,
+                                    ).withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.delete,
+                                        size: 18,
+                                        color: getTypeColor(item.type),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      const Text(
+                                        'Type: ',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                      Flexible(
+                                        child: Text(
+                                          item.type,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            color: Colors.black,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  // decoration: BoxDecoration(
+                                  //   color: Color(0xFFEEF3EA),
+                                  //   borderRadius: BorderRadius.circular(8),
+                                  // ),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Icon(
+                                        Icons.tips_and_updates,
+                                        size: 16,
+                                        color: Color(0xFF4C6A4F),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          item.tip,
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.black54,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            trailing: IconButton(
+                              icon: const Icon(
+                                Icons.add,
+                                color: Color(0xFF4C6A4F),
+                              ),
+                              onPressed: () => _addToDiary(item),
+                              tooltip: 'Add to diary',
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+              ],
+            ),
           ),
         ),
       ),
