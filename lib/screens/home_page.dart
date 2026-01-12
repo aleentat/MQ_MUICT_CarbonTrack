@@ -8,6 +8,9 @@ import '../database/db_helper.dart';
 import 'carbon_diary_page.dart';
 import 'statistic_page.dart';
 import 'activity_page.dart';
+import '../widgets/home_tree_widget.dart';
+import '../models/weekly_eco_state.dart';
+import '../utils/eco_score_calculator.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -17,6 +20,8 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
   double _totalTravelCarbon = 0.0;
+  int _weeklyEcoScore = 0;
+
 
   @override
   void initState() {
@@ -25,26 +30,75 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _loadData() async {
-    final travelEntries = await DBHelper.instance.getAllTravelDiaryEntries();
+  final travelEntries =
+      await DBHelper.instance.getAllTravelDiaryEntries();
 
-    final now = DateTime.now();
-    final weekStart = now.subtract(Duration(days: now.weekday - 1));
-    final weekEnd = weekStart.add(Duration(days: 6));
+  final now = DateTime.now();
+  final weekStart = DateTime(now.year, now.month, now.day)
+    .subtract(Duration(days: now.weekday - 1));
+  final weekEnd = weekStart.add(const Duration(days: 6));
 
-    double total = 0.0;
+  double total = 0.0;
 
-    for (var entry in travelEntries) {
-      final date = entry.timestamp;
-      if (date.isAfter(weekStart.subtract(const Duration(days: 1))) &&
-          date.isBefore(weekEnd.add(const Duration(days: 1)))) {
-        total += entry.carbon ?? 0.0;
-      }
+  for (final entry in travelEntries) {
+    final d = DateTime(
+      entry.timestamp.year,
+      entry.timestamp.month,
+      entry.timestamp.day,
+    );
+
+    if (!d.isBefore(weekStart) && !d.isAfter(weekEnd)) {
+      total += entry.carbon;
     }
-
-    setState(() {
-      _totalTravelCarbon = total;
-    });
   }
+
+  final score = await _calculateWeeklyEcoScore();
+
+  setState(() {
+    _weeklyEcoScore = score;
+  });
+}
+
+Future<int> _calculateWeeklyEcoScore() async {
+  final travelEntries =
+      await DBHelper.instance.getAllTravelDiaryEntries();
+  final wasteEntries =
+      await DBHelper.instance.getAllWasteDiaryEntries();
+
+  final now = DateTime.now();
+  final weekStart = DateTime(now.year, now.month, now.day)
+      .subtract(Duration(days: now.weekday - 1));
+  final weekEnd = weekStart.add(const Duration(days: 6));
+
+  final Map<String, double> dailyTotals = {};
+
+  void addEntry(DateTime timestamp, double carbon) {
+    final d = DateTime(timestamp.year, timestamp.month, timestamp.day);
+    if (!d.isBefore(weekStart) && !d.isAfter(weekEnd)) {
+      final key = DateFormat('E').format(d); // Mon–Sun (same as StatisticPage)
+      dailyTotals[key] = (dailyTotals[key] ?? 0) + carbon;
+    }
+  }
+
+  for (final e in travelEntries) {
+    addEntry(e.timestamp, e.carbon);
+  }
+
+  for (final e in wasteEntries) {
+    addEntry(e.timestamp, e.carbon);
+  }
+
+  int weeklyScore = 0;
+  dailyTotals.forEach((day, dailyCO2) {
+    weeklyScore += EcoScoreCalculator.dailyScore(dailyCO2);
+  });
+
+  print('HOME weekly eco score: $weeklyScore');
+  print('Daily totals: $dailyTotals');
+
+  return weeklyScore;
+}
+
 
   void _onItemTapped(int index) {
     setState(() {
@@ -199,87 +253,125 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildEcoScoreBar() {
-    final double standardCO2 = 20.0;
-    final bool isBelow = _totalTravelCarbon <= standardCO2;
+  final int weeklyEcoScore = _weeklyEcoScore;
 
-    DateTime now = DateTime.now();
-    DateTime weekStart = now.subtract(Duration(days: now.weekday - 1));
-    DateTime weekEnd = weekStart.add(const Duration(days: 6));
-    String weekRange =
-        '${DateFormat('d MMM').format(weekStart)} - ${DateFormat('d MMM yyyy').format(weekEnd)}';
+  TreeStage treeStage;
+  if (weeklyEcoScore >= 6) {
+    treeStage = TreeStage.blooming;
+  } else if (weeklyEcoScore >= 4) {
+    treeStage = TreeStage.healthy;
+  } else {
+    treeStage = TreeStage.sprout;
+  }
 
-    return Container(
-      padding: const EdgeInsets.all(23),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 2)),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(
-                'Weekly Travel Score',
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+  // Week range display
+  DateTime now = DateTime.now();
+  DateTime weekStart = now.subtract(Duration(days: now.weekday - 1));
+  DateTime weekEnd = weekStart.add(const Duration(days: 6));
+  String weekRange =
+      '${DateFormat('d MMM').format(weekStart)} - ${DateFormat('d MMM yyyy').format(weekEnd)}';
+
+  // Progress bar value (eco-score based)
+  final double maxScore = 7.0;
+  final double progressValue =
+      (weeklyEcoScore / maxScore).clamp(0.0, 1.0);
+
+  return Container(
+    padding: const EdgeInsets.all(23),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: const [
+        BoxShadow(
+          color: Colors.black12,
+          blurRadius: 6,
+          offset: Offset(0, 2),
+        ),
+      ],
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 🔹 Title row
+        Row(
+          children: [
+            Text(
+              'Weekly Eco Score',
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
               ),
-              const SizedBox(width: 8),
-              Text('($weekRange)', style: TextStyle(fontSize: 13)),
-            ],
-          ),
-          const SizedBox(height: 15),
-          Row(
-            children: [
-              Image.asset(
-                isBelow ? 'assets/gif/livetree.gif' : 'assets/gif/deadtree.gif',
-                height: 90,
-                width: 90,
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(10),
-                        color: Colors.grey[300],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: LinearProgressIndicator(
-                          value: (_totalTravelCarbon / standardCO2).clamp(
-                            0.0,
-                            1.0,
-                          ),
-                          color:
-                              isBelow
-                                  ? const Color.fromARGB(255, 76, 175, 134)
-                                  : const Color.fromARGB(255, 226, 83, 73),
-                          backgroundColor: Colors.transparent,
-                          minHeight: 14,
-                        ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '($weekRange)',
+              style: const TextStyle(fontSize: 13),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 15),
+
+        Row(
+          children: [
+            HomeTreeWidget(stage: treeStage),
+
+            const SizedBox(width: 16),
+
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      color: Colors.grey[300],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: LinearProgressIndicator(
+                        value: progressValue,
+                        minHeight: 14,
+                        backgroundColor: Colors.transparent,
+                        color: _treeColor(treeStage),
                       ),
                     ),
-                    const SizedBox(height: 14),
-                    Text(
-                      '${_totalTravelCarbon.toStringAsFixed(2)} kg CO₂ • ${isBelow ? 'Below Standard 🌿' : 'Above Standard ☁️'}',
-                      style: TextStyle(fontSize: 13),
-                    ),
-                  ],
-                ),
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  Text(
+                    'Score: $weeklyEcoScore • ${_treeLabel(treeStage)}',
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ],
-      ),
-    );
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
+  Color _treeColor(TreeStage stage) {
+    switch (stage) {
+      case TreeStage.sprout:
+        return Colors.brown;
+      case TreeStage.healthy:
+        return Colors.green;
+      case TreeStage.blooming:
+        return Colors.lightGreen;
+    }
+  }
+  String _treeLabel(TreeStage stage) {
+    switch (stage) {
+      case TreeStage.sprout:
+        return 'Sprout';
+      case TreeStage.healthy:
+        return 'Healthy';
+      case TreeStage.blooming:
+        return 'Blooming';
+    }
   }
 
   Widget _buildCarbonTipBubble() {

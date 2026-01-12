@@ -7,6 +7,8 @@ import 'dart:math';
 import '../models/usage_summary.dart';
 import '../services/api_service.dart';
 import 'dart:convert';
+import '../utils/eco_score_calculator.dart';
+
 
 
 class StatisticPage extends StatefulWidget {
@@ -50,7 +52,7 @@ Future<void> _sendCurrentStatistics() async {
     date: DateTime.now().toIso8601String().split('T').first,
     totalLogs: totalLogs,
     totalDailyCO2: totalDailyCO2,
-    ecoScore: _calculateEcoScore(totalDailyCO2),
+    ecoScore: EcoScoreCalculator.dailyScore(totalDailyCO2),
   );
   print(totalDailyCO2);
   print("--------------------");
@@ -72,14 +74,26 @@ Future<void> _sendCurrentStatistics() async {
   );
 }
 
-int _calculateEcoScore(double totalCO2) {
-  if (totalCO2 >= 20.494) return -2;
-  if (totalCO2 < 20.494 && totalCO2 >= 11.784) return -1;
-  if (totalCO2 < 11.784 && totalCO2 >= 8.701) return 0;
-  if (totalCO2 < 8.701 && totalCO2 >= 5.124) return 1;
-  if (totalCO2 < 5.124 && totalCO2 > 0) return 2;
-  return 0;
+int _calculateWeeklyEcoScore() {
+  if (_selectedTimeframe != 'Weekly') return 0;
+
+  int weeklyScore = 0;
+
+  // ✅ Travel
+  travelData.forEach((_, dailyCO2) {
+    weeklyScore += EcoScoreCalculator.dailyScore(dailyCO2);
+
+  });
+
+  // ✅ Waste
+  wasteData.forEach((_, dailyCO2) {
+    weeklyScore += EcoScoreCalculator.dailyScore(dailyCO2);
+
+  });
+
+  return weeklyScore;
 }
+
 
   Future<void> _loadData() async {
     final travelEntries = await DBHelper.instance.getAllTravelDiaryEntries();
@@ -116,30 +130,41 @@ int _calculateEcoScore(double totalCO2) {
       prevTravelData = oldTravelData;
       prevWasteData = oldWasteData;
     });
+
+
+    print('Travel weekly days: ${travelData.length}');
+    print('Waste weekly days: ${wasteData.length}');
+    print('Weekly eco score: ${_calculateWeeklyEcoScore()}');
   }
 
   bool _isInRange(DateTime timestamp, DateTime refDate) {
-    late DateTime start, end;
+  // Normalize everything to date-only (no time)
+  final ts = DateTime(timestamp.year, timestamp.month, timestamp.day);
+  final ref = DateTime(refDate.year, refDate.month, refDate.day);
 
-    switch (_selectedTimeframe) {
-      case 'Weekly':
-        start = refDate.subtract(Duration(days: refDate.weekday - 1));
-        end = start.add(const Duration(days: 6));
-        break;
-      case 'Monthly':
-        start = DateTime(refDate.year, refDate.month, 1);
-        end = DateTime(refDate.year, refDate.month + 1, 0);
-        break;
-      case 'Yearly':
-        start = DateTime(refDate.year, 1, 1);
-        end = DateTime(refDate.year, 12, 31);
-        break;
-      default:
-        return false;
-    }
+  late DateTime start;
+  late DateTime end;
 
-    return !timestamp.isBefore(start) && !timestamp.isAfter(end);
+  switch (_selectedTimeframe) {
+    case 'Weekly':
+      start = ref.subtract(Duration(days: ref.weekday - 1));
+      end = start.add(const Duration(days: 6));
+      break;
+
+    case 'Monthly':
+      start = DateTime(ref.year, ref.month, 1);
+      end = DateTime(ref.year, ref.month + 1, 0);
+      break;
+
+    case 'Yearly':
+      start = DateTime(ref.year, 1, 1);
+      end = DateTime(ref.year, 12, 31);
+      break;
   }
+
+  return !ts.isBefore(start) && !ts.isAfter(end);
+}
+
 
   DateTime _getPreviousViewDate() {
     switch (_selectedTimeframe) {
@@ -299,7 +324,6 @@ int _calculateEcoScore(double totalCO2) {
     final dataMap = _selectedDataType == 'Travel' ? travelData : wasteData;
     final prevMap =
         _selectedDataType == 'Travel' ? prevTravelData : prevWasteData;
-
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -365,6 +389,11 @@ int _calculateEcoScore(double totalCO2) {
                 ),
               ],
             ),
+
+            const SizedBox(height: 10),
+            if (_selectedTimeframe == 'Weekly')
+            _buildWeeklyEcoScoreCard(_calculateWeeklyEcoScore()),
+
             const SizedBox(height: 20),
             Container(
               height: 300,
@@ -665,4 +694,55 @@ int _calculateEcoScore(double totalCO2) {
       ),
     );
   }
+
+  Widget _buildWeeklyEcoScoreCard(int score) {
+  Color color;
+  String label;
+
+  if (score >= 8) {
+    color = Colors.green;
+    label = 'Excellent 🌸';
+  } else if (score >= 2) {
+    color = Colors.orange;
+    label = 'Good Progress 🌳';
+  } else {
+    color = Colors.red;
+    label = 'Needs Improvement 🌱';
+  }
+
+  return Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(14),
+      border: Border.all(color: color, width: 1.5),
+      boxShadow: [
+        BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+      ],
+    ),
+    child: Row(
+      children: [
+        Icon(Icons.eco, color: color, size: 30),
+        const SizedBox(width: 12),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Weekly Eco Score',
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+              ),
+            ),
+            Text(
+              '$score • $label',
+              style: TextStyle(color: color, fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
+
 }
