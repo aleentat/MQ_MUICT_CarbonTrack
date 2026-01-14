@@ -1,7 +1,8 @@
+import 'package:carbondiary/screens/eating_calculator.dart';
+import 'package:carbondiary/screens/shopping_calculator.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-// import 'package:lottie/lottie.dart';
 import 'travel_carbon_calculator.dart';
 import 'waste_sorting_guide.dart';
 
@@ -40,7 +41,12 @@ class _ActivityPageState extends State<ActivityPage> {
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color.fromARGB(255, 39, 76, 67).withOpacity(0.9),
+                        color: const Color.fromARGB(
+                          255,
+                          39,
+                          76,
+                          67,
+                        ).withOpacity(0.9),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color: Colors.grey.shade300,
@@ -68,26 +74,67 @@ class _ActivityPageState extends State<ActivityPage> {
               ),
             ),
             SizedBox(height: 50),
-            _buildActivityButton(
-              animationPath: 'assets/images/travel.png',
-              label: 'Travel Carbon Calculator',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => TravelCarbonCalculator()),
-                );
-              },
+            Center(
+              child: Text(
+                'Choose an activity to log',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                ),
+              ),
             ),
-            SizedBox(height: 24),
-            _buildActivityButton(
-              animationPath: 'assets/images/waste.png',
-              label: 'Waste Sorting Guide',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => WasteSortingGuide()),
-                );
-              },
+            SizedBox(height: 20),
+            GridView.count(
+              crossAxisCount: 2, // 2 x 2 grid
+              crossAxisSpacing: 24,
+              mainAxisSpacing: 24,
+              shrinkWrap: true,
+              physics: NeverScrollableScrollPhysics(),
+              children: [
+                _buildActivityButton(
+                  imagePath: 'assets/images/travel.png',
+                  label: 'Travel',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => TravelCarbonCalculator(),
+                      ),
+                    );
+                  },
+                ),
+                _buildActivityButton(
+                  imagePath: 'assets/images/waste.png',
+                  label: 'Waste',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => WasteSortingGuide()),
+                    );
+                  },
+                ),
+                _buildActivityButton(
+                  imagePath: 'assets/images/shop.png',
+                  label: 'Shopping',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => ShoppingCalculator()),
+                    );
+                  },
+                ),
+                _buildActivityButton(
+                  imagePath: 'assets/images/eat.png',
+                  label: 'Eating',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => EatingCalculator()),
+                    );
+                  },
+                ),
+              ],
             ),
           ],
         ),
@@ -96,7 +143,7 @@ class _ActivityPageState extends State<ActivityPage> {
   }
 
   Widget _buildActivityButton({
-    required String animationPath,
+    required String imagePath,
     required String label,
     required VoidCallback onTap,
   }) {
@@ -104,38 +151,30 @@ class _ActivityPageState extends State<ActivityPage> {
       borderRadius: BorderRadius.circular(20),
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.symmetric(vertical: 16, horizontal: 20),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.95),
-          borderRadius: BorderRadius.circular(20),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(25),
           boxShadow: [
             BoxShadow(
               color: Colors.black12,
-              blurRadius: 8,
+              blurRadius: 10,
               offset: Offset(0, 4),
             ),
           ],
         ),
-        child: Row(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset(
-              animationPath,
-              width: 60,
-              height: 60,
-              fit: BoxFit.contain,
-            ),
-            SizedBox(width: 20),
-            Expanded(
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
-                ),
+            Image.asset(imagePath, width: 50, height: 50, fit: BoxFit.contain),
+            SizedBox(height: 12),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
               ),
             ),
-            Icon(Icons.arrow_forward_ios, color: Colors.grey),
           ],
         ),
       ),
