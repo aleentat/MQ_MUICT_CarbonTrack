@@ -390,9 +390,7 @@ int _calculateWeeklyEcoScore() {
               ],
             ),
 
-            const SizedBox(height: 10),
-            if (_selectedTimeframe == 'Weekly')
-            _buildWeeklyEcoScoreCard(_calculateWeeklyEcoScore()),
+            
 
             const SizedBox(height: 20),
             Container(
@@ -694,55 +692,5 @@ int _calculateWeeklyEcoScore() {
       ),
     );
   }
-
-  Widget _buildWeeklyEcoScoreCard(int score) {
-  Color color;
-  String label;
-
-  if (score >= 8) {
-    color = Colors.green;
-    label = 'Excellent 🌸';
-  } else if (score >= 2) {
-    color = Colors.orange;
-    label = 'Good Progress 🌳';
-  } else {
-    color = Colors.red;
-    label = 'Needs Improvement 🌱';
-  }
-
-  return Container(
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(14),
-      border: Border.all(color: color, width: 1.5),
-      boxShadow: [
-        BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
-      ],
-    ),
-    child: Row(
-      children: [
-        Icon(Icons.eco, color: color, size: 30),
-        const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Weekly Eco Score',
-              style: GoogleFonts.poppins(
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
-              ),
-            ),
-            Text(
-              '$score • $label',
-              style: TextStyle(color: color, fontWeight: FontWeight.w600),
-            ),
-          ],
-        ),
-      ],
-    ),
-  );
-}
 
 }
