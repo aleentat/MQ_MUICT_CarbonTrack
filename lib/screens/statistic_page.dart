@@ -27,8 +27,12 @@ class _StatisticPageState extends State<StatisticPage> {
   Map<String, double> wasteData = {};
   Map<String, double> prevTravelData = {};
   Map<String, double> prevWasteData = {};
+  Map<String, double> eatingData = {};
+  Map<String, double> prevEatingData = {};
+  Map<String, double> shoppingData = {};
+  Map<String, double> prevShoppingData = {};
 
-  final List<String> dataTypes = ['Travel', 'Waste'];
+  final List<String> dataTypes = ['Travel', 'Waste', 'Eating', 'Shopping'];
   final List<String> timeframes = ['Weekly', 'Monthly', 'Yearly'];
 
   @override
@@ -39,8 +43,14 @@ class _StatisticPageState extends State<StatisticPage> {
 
 // SENDING STATISTICS TO BACKEND
 Future<void> _sendCurrentStatistics() async {
-  final dataMap =
-      _selectedDataType == 'Travel' ? travelData : wasteData;
+  final dataMap = _selectedDataType == 'Travel'
+    ? travelData
+    : _selectedDataType == 'Waste'
+        ? wasteData
+        : _selectedDataType == 'Eating'
+            ? eatingData
+            : shoppingData;
+
 
   if (dataMap.isEmpty) return;
 
@@ -78,15 +88,22 @@ int _calculateWeeklyEcoScore() {
   if (_selectedTimeframe != 'Weekly') return 0;
 
   int weeklyScore = 0;
-
-  // ✅ Travel
   travelData.forEach((_, dailyCO2) {
     weeklyScore += EcoScoreCalculator.dailyScore(dailyCO2);
 
   });
 
-  // ✅ Waste
   wasteData.forEach((_, dailyCO2) {
+    weeklyScore += EcoScoreCalculator.dailyScore(dailyCO2);
+
+  });
+
+  eatingData.forEach((_, dailyCO2) {
+    weeklyScore += EcoScoreCalculator.dailyScore(dailyCO2);
+
+  });
+
+  shoppingData.forEach((_, dailyCO2) {
     weeklyScore += EcoScoreCalculator.dailyScore(dailyCO2);
 
   });
@@ -99,10 +116,18 @@ int _calculateWeeklyEcoScore() {
     final travelEntries = await DBHelper.instance.getAllTravelDiaryEntries();
     final wasteEntries = await DBHelper.instance.getAllWasteDiaryEntries();
 
+// NEW ADDITIONS FOR EATING AND SHOPPING FUTURE IMPLEMENTATION
+    final eatingEntries = [];
+    final shoppingEntries = [];
+
     Map<String, double> newTravelData = {};
     Map<String, double> newWasteData = {};
+    Map<String, double> newEatingData = {};
+    Map<String, double> newShoppingData = {};
     Map<String, double> oldTravelData = {};
     Map<String, double> oldWasteData = {};
+    Map<String, double> oldEatingData = {};
+    Map<String, double> oldShoppingData = {};
 
     for (var entry in travelEntries) {
       if (_isInRange(entry.timestamp, _currentViewDate)) {
@@ -127,13 +152,19 @@ int _calculateWeeklyEcoScore() {
     setState(() {
       travelData = newTravelData;
       wasteData = newWasteData;
+      eatingData = newEatingData;
+      shoppingData = newShoppingData;
       prevTravelData = oldTravelData;
       prevWasteData = oldWasteData;
+      prevEatingData = oldEatingData;
+      prevShoppingData = oldShoppingData;
     });
 
 
     print('Travel weekly days: ${travelData.length}');
     print('Waste weekly days: ${wasteData.length}');
+    print('Eating weekly days: ${eatingData.length}');
+    print('Shopping weekly days: ${shoppingData.length}');
     print('Weekly eco score: ${_calculateWeeklyEcoScore()}');
   }
 
@@ -321,9 +352,22 @@ int _calculateWeeklyEcoScore() {
 
   @override
   Widget build(BuildContext context) {
-    final dataMap = _selectedDataType == 'Travel' ? travelData : wasteData;
-    final prevMap =
-        _selectedDataType == 'Travel' ? prevTravelData : prevWasteData;
+    final dataMap = _selectedDataType == 'Travel'
+    ? travelData
+    : _selectedDataType == 'Waste'
+        ? wasteData
+        : _selectedDataType == 'Eating'
+            ? eatingData
+            : shoppingData;
+
+    final prevMap = _selectedDataType == 'Travel'
+    ? prevTravelData
+    : _selectedDataType == 'Waste'
+        ? prevWasteData
+        : _selectedDataType == 'Eating'
+            ? prevEatingData
+            : prevShoppingData;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
