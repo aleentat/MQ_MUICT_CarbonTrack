@@ -263,7 +263,7 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
               ),
               padding: EdgeInsets.all(10),
               child: Icon(
-                Icons.directions_car_filled,
+                Icons.restaurant_menu,
                 color: Color(0xFF1976D2),
                 size: 26,
               ),
@@ -277,7 +277,11 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${log.carbon.toStringAsFixed(2)} kgCO₂ | Qty: ${log.quantity}',
+                  'Qty: ${log.quantity}',
+                  style: TextStyle(fontSize: 12),
+                ),
+                Text(
+                  'Carbon: ${log.carbon.toStringAsFixed(2)} kgCO₂',
                   style: TextStyle(fontSize: 12),
                 ),
                 Text(
@@ -348,8 +352,10 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
   Widget _buildDailySummary(List<UnifiedDiaryEntry> logs) {
     int wasteCount = 0; // quantity
     int travelCount = 0; // log
+    int eatingCount = 0; // log
     double totalTravelCarbon = 0.0;
     double totalWasteCarbon = 0.0;
+    double totalEatingCarbon = 0.0;
 
     for (var log in logs) {
       if (log.type == 'waste') {
@@ -360,6 +366,10 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
         travelCount++;
         final travelEntry = log.entry as TravelDiaryEntry;
         totalTravelCarbon += travelEntry.carbon;
+      } else if (log.type == 'eating') {
+        eatingCount++;
+        final eatingEntry = log.entry as EatingDiaryEntry;
+        totalEatingCarbon += eatingEntry.carbon;
       }
     }
     return Container(

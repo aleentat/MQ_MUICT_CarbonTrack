@@ -115,10 +115,8 @@ int _calculateWeeklyEcoScore() {
   Future<void> _loadData() async {
     final travelEntries = await DBHelper.instance.getAllTravelDiaryEntries();
     final wasteEntries = await DBHelper.instance.getAllWasteDiaryEntries();
-
-// NEW ADDITIONS FOR EATING AND SHOPPING FUTURE IMPLEMENTATION
-    final eatingEntries = [];
-    final shoppingEntries = [];
+    final eatingEntries = await DBHelper.instance.getAllEatingDiaryEntries();
+    final shoppingEntries = []; // To be implemented: fetch shopping diary entries
 
     Map<String, double> newTravelData = {};
     Map<String, double> newWasteData = {};
@@ -149,6 +147,16 @@ int _calculateWeeklyEcoScore() {
       }
     }
 
+    for (var entry in eatingEntries) {
+      if (_isInRange(entry.timestamp, _currentViewDate)) {
+        final key = _formatKey(entry.timestamp);
+        newEatingData[key] = (newEatingData[key] ?? 0) + entry.carbon;
+      } else if (_isInRange(entry.timestamp, _getPreviousViewDate())) {
+        final key = _formatKey(entry.timestamp);
+        oldEatingData[key] = (oldEatingData[key] ?? 0) + entry.carbon;
+      }
+    }
+    
     setState(() {
       travelData = newTravelData;
       wasteData = newWasteData;

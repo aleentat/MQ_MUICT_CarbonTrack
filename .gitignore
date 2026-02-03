@@ -49,3 +49,11 @@ app.*.map.json
 
 # Node.js dependencies
 node_modules/
+ios/Runner.xcodeproj/project.pbxproj
+ios/Podfile.lock
+ios/Podfile
+ios/Flutter/AppFrameworkInfo.plist
+macos/Podfile
+macos/Podfile.lock
+macos/Runner.xcodeproj/project.pbxproj
+macos/Runner.xcworkspace/contents.xcworkspacedata
