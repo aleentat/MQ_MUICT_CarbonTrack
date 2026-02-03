@@ -7,6 +7,7 @@ import '../database/db_helper.dart';
 import 'carbon_diary_page.dart';
 import 'statistic_page.dart';
 import 'activity_page.dart';
+import 'gamification_page.dart';
 import '../widgets/home_tree_widget.dart';
 import '../models/weekly_eco_state.dart';
 import '../utils/eco_score_calculator.dart';
@@ -27,6 +28,8 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _loadData();
   }
+
+  final List<int> _weeklyEcoScores = [5, 6, 4, 7]; 
 
   Future<void> _loadData() async {
   final travelEntries =
@@ -200,7 +203,19 @@ Future<int> _calculateWeeklyEcoScore() async {
         children: [
           _buildWelcomeSection(),
           const SizedBox(height: 10),
-          _buildEcoScoreBar(),
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => GamificationPage(
+                    weeklyEcoScores: _weeklyEcoScores,
+                  ),
+                ),
+              );
+            },
+            child: _buildEcoScoreBar(),
+          ),
           const SizedBox(height: 6),
           _buildCarbonTipBubble(),
           const SizedBox(height: 40),

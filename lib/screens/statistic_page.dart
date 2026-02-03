@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../database/db_helper.dart';
 import 'dart:math';
@@ -72,6 +71,10 @@ Future<void> _sendCurrentStatistics() async {
       ),
     ),
   );
+}
+
+int _weekOfMonth(DateTime date) {
+  return ((date.day - 1) ~/ 7) + 1;
 }
 
 int _calculateWeeklyEcoScore() {
@@ -226,7 +229,8 @@ int _calculateWeeklyEcoScore() {
       case 'Weekly':
         return DateFormat('E').format(timestamp); // Mon, Tue, ...
       case 'Monthly':
-        return '${timestamp.day}'; // '1', '2', ..., '31'
+        final week = _weekOfMonth(timestamp);
+        return 'Week $week'; // Week 1-5
       case 'Yearly':
         return DateFormat('MMM').format(timestamp); // Jan, Feb, ...
       default:
@@ -298,7 +302,8 @@ int _calculateWeeklyEcoScore() {
       case 'Monthly':
         final lastDay =
             DateTime(_currentViewDate.year, _currentViewDate.month + 1, 0).day;
-        return List.generate(lastDay, (i) => '${i + 1}');
+        final totalWeeks = ((lastDay - 1) ~/ 7) + 1;
+        return List.generate(totalWeeks, (i) => 'Week ${i + 1}');
       case 'Yearly':
         return [
           'Jan',
@@ -328,18 +333,18 @@ int _calculateWeeklyEcoScore() {
       appBar: AppBar(
         title: Text(
           'Statistics',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.transparent,
         actions: [
-        IconButton(
-        icon: const Icon(Icons.upload_file),
-        tooltip: 'Send statistics',
-        onPressed: () async {
-        await _sendCurrentStatistics();
-      },
-    ),
-  ],
+          IconButton(
+            icon: const Icon(Icons.upload_file),
+            tooltip: 'Send statistics',
+            onPressed: () async {
+              await _sendCurrentStatistics();
+            },
+          ),
+        ],
       ),
       backgroundColor: Colors.transparent,
       body: Padding(
@@ -347,27 +352,27 @@ int _calculateWeeklyEcoScore() {
         child: ListView(
           children: [
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(
-                  child: _buildSegmentedControl(
-                    label: 'Type',
-                    options: dataTypes,
-                    selected: _selectedDataType,
-                    onSelected: (val) {
-                      setState(() => _selectedDataType = val);
-                    },
-                  ),
+                _buildDropdown(
+                  value: _selectedDataType,
+                  items: dataTypes,
+                  icon: Icons.grid_view,
+                  iconBgColor: const Color(0xFF1C8D51),
+                  onChanged: (v) {
+                    setState(() => _selectedDataType = v);
+                    _loadData();
+                  },
                 ),
-                Expanded(
-                  child: _buildSegmentedControl(
-                    label: 'View',
-                    options: timeframes,
-                    selected: _selectedTimeframe,
-                    onSelected: (val) {
-                      setState(() => _selectedTimeframe = val);
-                      _loadData();
-                    },
-                  ),
+                _buildDropdown(
+                  value: _selectedTimeframe,
+                  items: timeframes,
+                  icon: Icons.calendar_month,
+                  iconBgColor: const Color(0xFFE9C154),
+                  onChanged: (v) {
+                    setState(() => _selectedTimeframe = v);
+                    _loadData();
+                  },
                 ),
               ],
             ),
@@ -390,15 +395,9 @@ int _calculateWeeklyEcoScore() {
               ],
             ),
 
-            
-
             const SizedBox(height: 20),
-            Container(
-              height: 300,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _buildBarChart(dataMap),
-            ),
-            const SizedBox(height: 10),
+            SizedBox(height: 260, child: _buildBarChart(dataMap)),
+            const SizedBox(height: 16),
             _buildSummaryCard(dataMap, prevMap),
           ],
         ),
@@ -406,59 +405,52 @@ int _calculateWeeklyEcoScore() {
     );
   }
 
-  Widget _buildSegmentedControl({
-    required String label,
-    required List<String> options,
-    required String selected,
-    required Function(String) onSelected,
+Widget _buildDropdown({
+    required String value,
+    required List<String> items,
+    required IconData icon,
+    required Color iconBgColor,
+    required Function(String) onChanged,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-            color: Color.fromARGB(255, 33, 98, 73),
-          ),
-        ),
-        Container(
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: ToggleButtons(
-              isSelected: options.map((e) => e == selected).toList(),
-              onPressed: (index) => onSelected(options[index]),
-              borderRadius: BorderRadius.circular(30),
-              selectedColor: Colors.white,
-              color: const Color(0xFF4C6A4F),
-              fillColor: const Color(0xFF4C6A4F),
-              borderColor: Colors.black,
-              selectedBorderColor: Colors.black,
-              constraints: const BoxConstraints(minHeight: 30, minWidth: 55),
-              textStyle: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
-              ),
-              children:
-                  options.map((e) {
-                    final isSelected = e == selected;
-                    return Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 7,
-                        vertical: 8,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(color: const Color.fromARGB(255, 51, 50, 50)),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: value,
+          icon: const Icon(Icons.keyboard_arrow_down),
+          items:
+              items.map((e) {
+                return DropdownMenuItem(
+                  value: e,
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: iconBgColor,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(icon, size: 18, color: Colors.white,
+                        ),
                       ),
-                      decoration: BoxDecoration(
-                        color:
-                            isSelected ? const Color(0xFF4C6A4F) : Colors.white,
+                      const SizedBox(width: 8),
+                      Text(e, style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
-                      child: Text(e),
-                    );
-                  }).toList(),
-            ),
-          ),
+                    ],
+                  ),
+                );
+              }).toList(),
+          onChanged: (val) {
+            if (val != null) onChanged(val);
+          },
         ),
-      ],
+      ),
     );
   }
 
@@ -467,203 +459,305 @@ int _calculateWeeklyEcoScore() {
     Map<String, double> prevMap,
   ) {
     if (dataMap.isEmpty) {
-      return Center(
-        child: Text(
-          "No data in this period",
-          style: TextStyle(color: Colors.grey),
+      return Container(
+        padding: const EdgeInsets.all(20),
+        child: const Center(
+          child: Text(
+            'No data in this period',
+            style: TextStyle(color: Colors.grey),
+          ),
         ),
       );
     }
-
     final total = dataMap.values.fold(0.0, (a, b) => a + b);
     final avg = total / dataMap.length;
     final maxVal = dataMap.values.reduce(max);
     final minVal = dataMap.values.reduce(min);
+    final double totalPercent = 0.0;
+    final double avgPercent = -0.0;
 
-    final prevTotal = prevMap.values.fold(0.0, (a, b) => a + b);
-    final diff = total - prevTotal;
-    final percent = prevTotal == 0 ? 100 : (diff / prevTotal) * 100;
-
-    final isIncrease = diff >= 0;
-    final unit = 'kg CO₂';
-
-    Color diffColor = isIncrease ? Colors.red : Colors.green;
-    Icon diffIcon =
-        isIncrease
-            ? Icon(Icons.arrow_upward, color: diffColor, size: 18)
-            : Icon(Icons.arrow_downward, color: diffColor, size: 18);
-
-    double progress = (avg / (maxVal * 1.2)).clamp(0.0, 1.0);
-
-    return Container(
-      padding: EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 243, 255, 252),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF4C6A4F), width: 1.5),
-        boxShadow: [
-          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "📍 Highlights",
-            style: GoogleFonts.poppins(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-              color: Color.fromARGB(255, 34, 70, 43),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 4,
-            runSpacing: 4,
-            children: [
-              Text(
-                "Total: ${total.toStringAsFixed(2)} $unit",
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              diffIcon,
-              Text(
-                "${percent.abs().toStringAsFixed(1)}%",
-                style: TextStyle(color: diffColor, fontWeight: FontWeight.bold),
-              ),
-              Text(
-                "compared to ${_getPreviousLabel()}",
-                style: TextStyle(color: Colors.grey[700], fontSize: 12),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            "Average per unit time: ${avg.toStringAsFixed(2)} $unit",
-            style: TextStyle(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 6),
-          LinearProgressIndicator(
-            value: progress,
-            minHeight: 12,
-            backgroundColor: Colors.grey[300],
-            color: Color(0xFF4C6A4F),
-          ),
-          const SizedBox(height: 16),
-          Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _miniBarWithLabel("Max", maxVal, maxVal, unit, Colors.redAccent),
-              _miniBarWithLabel("Min", minVal, maxVal, unit, Colors.green),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _miniBarWithLabel(
-    String label,
-    double value,
-    double maxValue,
-    String unit,
-    Color color,
-  ) {
-    double barWidth = 100 * (value / maxValue).clamp(0.0, 1.0);
-
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("$label: ${value.toStringAsFixed(2)} $unit"),
-        const SizedBox(width: 8),
+        Row(
+          children: [
+            Container(
+              width: 30,
+              height: 30,
+              decoration: const BoxDecoration(
+                color: Color(0xFFE6E6E6),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.bar_chart, size: 18),
+            ),
+            const SizedBox(width: 8),
+            const Text(
+              'Highlights',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
         Container(
-          width: barWidth,
-          height: 10,
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(5),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: const [
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 10,
+                offset: Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              _highlightBox(
+                title: 'Total emission',
+                value: '${total.toStringAsFixed(2)} kg CO2',
+                bgColor: const Color(0xFFFFE4CA),
+                percent: totalPercent,
+              ),
+              const SizedBox(width: 12),
+              _highlightBox(
+                title: 'Average emission',
+                value: '${avg.toStringAsFixed(2)} kg CO2',
+                bgColor: const Color(0xFFCEE3FF),
+                percent: avgPercent,
+              ),
+            ],
           ),
         ),
+        const SizedBox(height: 20),
+        Column(children: [_minMaxCard(minVal, maxVal)]),
+        const SizedBox(height: 20),
       ],
     );
   }
 
-  // double _calculateMaxY(Map<String, double> dataMap) {
-  //   if (dataMap.isEmpty) return 1;
-  //   return dataMap.values.reduce((a, b) => a > b ? a : b);
-  // }
+  Widget _highlightBox({
+    required String title,
+    required String value,
+    required Color bgColor,
+    required double percent,
+  }) {
+    final isPositive = percent >= 0;
+
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center, // ⬅ กึ่งกลาง
+          children: [
+            Text(title, style: const TextStyle(fontSize: 13)),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 6),
+            
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: (isPositive ? Colors.green : Colors.red).withOpacity(
+                  0.2,
+                ),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '${percent.abs().toStringAsFixed(2)}%',
+                    style: TextStyle(
+                      color: isPositive ? Colors.green : Colors.red,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    isPositive ? Icons.arrow_upward : Icons.arrow_downward,
+                    size: 14,
+                    color: isPositive ? Colors.green : Colors.red,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _minMaxCard(double minVal, double maxVal) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 12,
+            offset: Offset(0, 6), // shadow เฉพาะด้านล่าง
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            height: 34,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: const LinearGradient(
+                colors: [Color(0xFFB9F0C1), Color(0xFF53C95C)],
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: const [
+                Text(
+                  'Min',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                  ),
+                ),
+                Text(
+                  'Max',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [_valueChip(minVal), _valueChip(maxVal)],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _valueChip(double value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF2F2F2),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        '${value.toStringAsFixed(2)} kg CO2',
+        style: const TextStyle(fontSize: 13),
+      ),
+    );
+  }
 
   double _calculateMaxY(Map<String, double> data) {
-    final maxY = data.values.isEmpty ? 0 : data.values.reduce(max);
-    return maxY * 1.3;
+    if (data.isEmpty) return 1;
+
+    final maxVal = data.values.reduce(max);
+
+    if (maxVal < 0.01) return 0.01;
+    if (maxVal < 0.1) return 0.1;
+    if (maxVal < 1) return 1;
+
+    return maxVal * 1.2;
+  }
+
+  double _calculateYAxisInterval(Map<String, double> data) {
+    if (data.isEmpty) return 1;
+
+    final maxVal = data.values.reduce(max);
+
+    if (maxVal < 0.01) return 0.002;
+    if (maxVal < 0.1) return 0.02;
+    if (maxVal < 1) return 0.2;
+
+    return maxVal / 4;
   }
 
   Widget _buildBarChart(Map<String, double> dataMap) {
     if (dataMap.isEmpty) {
-      return Center(child: Text("No graph data"));
+      return const Center(child: Text("No data"));
     }
 
     final labels = _generateLabelsForCurrentView();
+
     final barGroups = List.generate(labels.length, (i) {
-      final label = labels[i];
-      final value = dataMap[label] ?? 0;
+      final value = dataMap[labels[i]] ?? 0;
       return BarChartGroupData(
         x: i,
         barRods: [
           BarChartRodData(
             toY: value,
-            color: const Color.fromARGB(255, 84, 133, 117),
-            width: 16,
-            borderRadius: BorderRadius.circular(4),
-            backDrawRodData: BackgroundBarChartRodData(
-              show: true,
-              toY: value * 1.1,
-              color: Color(0xFFC8E6C9),
-            ),
+            width: 18,
+            color: const Color(0xFF2FB68E), // สีเขียวเต็ม
+            borderRadius: BorderRadius.circular(6),
           ),
         ],
       );
     });
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: SizedBox(
-        width: max(labels.length * 30.0, MediaQuery.of(context).size.width),
-        height: 200,
-        child: BarChart(
+    return Stack(
+      children: [
+        BarChart(
           BarChartData(
-            alignment: BarChartAlignment.spaceAround,
             maxY: _calculateMaxY(dataMap),
             barGroups: barGroups,
+            gridData: FlGridData(show: false),
+            borderData: FlBorderData(show: false),
             titlesData: FlTitlesData(
               leftTitles: AxisTitles(
                 sideTitles: SideTitles(
                   showTitles: true,
-                  reservedSize: 40,
-                  getTitlesWidget: (value, meta) {
-                    String unit = 'kg CO₂';
-                    return Text(
-                      '${value.toInt()} $unit',
-                      style: TextStyle(fontSize: 10),
-                    );
+                  interval: _calculateYAxisInterval(dataMap),
+                  reservedSize: 44,
+                  getTitlesWidget: (value, _) {
+                    String text;
+
+                    if (value == 0) {
+                      text = '0';
+                    } else if (value < 0.01) {
+                      text = value.toStringAsFixed(4);
+                    } else if (value < 0.1) {
+                      text = value.toStringAsFixed(3);
+                    } else if (value < 1) {
+                      text = value.toStringAsFixed(2);
+                    } else {
+                      text = value.toStringAsFixed(0);
+                    }
+
+                    return Text(text, style: const TextStyle(fontSize: 11));
                   },
                 ),
               ),
               bottomTitles: AxisTitles(
                 sideTitles: SideTitles(
                   showTitles: true,
-                  reservedSize: 40,
-                  getTitlesWidget: (value, meta) {
+                  getTitlesWidget: (value, _) {
                     final idx = value.toInt();
-                    if (idx >= 0 && idx < labels.length) {
-                      return SideTitleWidget(
-                        axisSide: meta.axisSide,
-                        child: Text(
-                          labels[idx],
-                          style: TextStyle(fontSize: 10),
-                        ),
+                    if (idx < labels.length) {
+                      return Text(
+                        labels[idx],
+                        style: const TextStyle(fontSize: 11),
                       );
                     }
-                    return SizedBox.shrink();
+                    return const SizedBox();
                   },
                 ),
               ),
@@ -672,25 +766,9 @@ int _calculateWeeklyEcoScore() {
                 sideTitles: SideTitles(showTitles: false),
               ),
             ),
-            gridData: FlGridData(show: false),
-            borderData: FlBorderData(show: false),
-            barTouchData: BarTouchData(
-              enabled: true,
-              touchTooltipData: BarTouchTooltipData(
-                tooltipBgColor: const Color.fromARGB(221, 38, 60, 58),
-                getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                  final value = rod.toY;
-                  return BarTooltipItem(
-                    '${value.toStringAsFixed(2)}',
-                    const TextStyle(color: Colors.white),
-                  );
-                },
-              ),
-            ),
           ),
         ),
-      ),
+      ],
     );
   }
-
 }
