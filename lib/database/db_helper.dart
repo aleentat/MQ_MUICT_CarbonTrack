@@ -3,9 +3,11 @@ import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import '../models/waste_item.dart';
 import '../models/waste_diary_entry.dart';
 import '../models/travel_diary_entry.dart';
+import '../models/eating_diary_entry.dart';
 
 class DBHelper {
   DBHelper._privateConstructor();  
@@ -94,6 +96,58 @@ class DBHelper {
         timestamp TEXT
       )
     ''');
+
+    await db.execute('''
+      CREATE TABLE food_emission_factor (
+       id INTEGER PRIMARY KEY AUTOINCREMENT,
+        food_name TEXT NOT NULL,
+        variant TEXT,
+        carbon REAL NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE eating_diary (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        variant TEXT,
+        quantity INTEGER DEFAULT 1,
+        carbon REAL,
+        timestamp TEXT,
+        note TEXT
+      )
+    ''');
+
+    // ---------- Food emission factors ----------
+    await db.insert('food_emission_factor', {'food_name':'Burger','variant':'Beef','carbon':5.140434});
+    await db.insert('food_emission_factor', {'food_name':'Burger','variant':'Pork','carbon':1.448394});
+    await db.insert('food_emission_factor', {'food_name':'Burger','variant':'Chicken','carbon':1.106794});
+    await db.insert('food_emission_factor', {'food_name':'Burger','variant':'Fish','carbon':0.693594});
+
+    await db.insert('food_emission_factor', {'food_name':'Pad Krapow','variant':'Beef','carbon':5.19395008});
+    await db.insert('food_emission_factor', {'food_name':'Pad Krapow','variant':'Pork','carbon':1.50191008});
+    await db.insert('food_emission_factor', {'food_name':'Pad Krapow','variant':'Chicken','carbon':1.16031008});
+    await db.insert('food_emission_factor', {'food_name':'Pad Krapow','variant':'Fish','carbon':0.74711008});
+
+    await db.insert('food_emission_factor', {'food_name':'Salad','variant':null,'carbon':0.3040376});
+
+    await db.insert('food_emission_factor', {'food_name':'Spaghetti','variant':'Beef','carbon':7.80368735});
+    await db.insert('food_emission_factor', {'food_name':'Spaghetti','variant':'Pork','carbon':2.26562735});
+    await db.insert('food_emission_factor', {'food_name':'Spaghetti','variant':'Chicken','carbon':1.75322735});
+    await db.insert('food_emission_factor', {'food_name':'Spaghetti','variant':'Fish','carbon':1.13342735});
+
+    await db.insert('food_emission_factor', {'food_name':'Steak','variant':'Beef','carbon':7.812772553});
+    await db.insert('food_emission_factor', {'food_name':'Steak','variant':'Pork','carbon':2.274712553});
+    await db.insert('food_emission_factor', {'food_name':'Steak','variant':'Chicken','carbon':1.762312553});
+    await db.insert('food_emission_factor', {'food_name':'Steak','variant':'Fish','carbon':1.142512553});
+
+    await db.insert('food_emission_factor', {'food_name':'Fried Rice','variant':'Beef','carbon':2.76265717});
+    await db.insert('food_emission_factor', {'food_name':'Fried Rice','variant':'Pork','carbon':0.91663717});
+    await db.insert('food_emission_factor', {'food_name':'Fried Rice','variant':'Chicken','carbon':0.74583717});
+    await db.insert('food_emission_factor', {'food_name':'Fried Rice','variant':'Fish','carbon':0.53923717});
+
+
+
     // Plastic unit is weight in kilogram
     await db.insert('waste_items', {'name': 'Plastic bottle', 'category': 'Plastic', 'subcategory': 'Bottle', 'type': 'Recyclable', 'tip': 'Remove cap and rinse before recycling.', 'ef': 4.68568, 'unit': 0.025});
     await db.insert('waste_items', {'name': 'Plastic bag', 'category': 'Plastic', 'subcategory': 'Bag', 'type': 'Trash', 'tip': 'Try to reuse before disposal.', 'ef': 8.98311, 'unit': 0.006});
@@ -166,7 +220,7 @@ class DBHelper {
     await db.insert('waste_items', {'name': 'Toxic/Poisonous', 'category': 'Symbol Guide', 'subcategory': 'Non-Recyclable', 'type': 'toxic.png', 'tip': 'Do not dispose in drains or bins. Take to a toxic waste facility or special collection point.'});
   }
 
-static const int _dbVersion = 6;
+static const int _dbVersion = 7;
 
 Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     // v2: add carbon column
@@ -216,6 +270,29 @@ Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     WHERE ef IS NULL OR unit IS NULL
   ''');
 }
+    if (oldVersion < 7) {
+  await db.execute('''
+    CREATE TABLE IF NOT EXISTS food_emission_factor (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      food_name TEXT NOT NULL,
+      variant TEXT,
+      carbon REAL NOT NULL
+    )
+  ''');
+
+  await db.execute('''
+    CREATE TABLE IF NOT EXISTS eating_diary (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      variant TEXT,
+      quantity INTEGER DEFAULT 1,
+      carbon REAL,
+      timestamp TEXT,
+      note TEXT
+    )
+  ''');
+}
+
 
   }
 
@@ -325,4 +402,65 @@ Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     final db = await database;
     db.close();
   }
+
+  // --------------------------- Eating Diary ---------------------------
+
+  Future<List<EatingDiaryEntry>> getAllEatingDiaryEntries() async {
+    final db = await database;
+    final maps = await db.query('eating_diary',
+    orderBy: 'timestamp DESC');
+    return List.generate(maps.length, (i) => EatingDiaryEntry.fromMap(maps[i]));
+  }
+
+Future<int> insertEatingDiaryEntry(EatingDiaryEntry entry) async {
+  final db = await database;
+  print(
+    "Saving eating diary: ${entry.name} (${entry.variant}) - ${entry.carbon}",
+  );
+
+  return await db.insert(
+    'eating_diary',
+    entry.toMap(),
+    conflictAlgorithm: ConflictAlgorithm.replace,
+  );
+}
+
+Future<double> getFoodCarbon(String food, String? variant) async {
+  final db = await database;
+
+  // Normalize input
+  final foodKey = food.trim();
+  final variantKey = variant?.trim();
+
+  List<Map<String, dynamic>> result;
+
+  if (variantKey == null || variantKey.isEmpty) {
+    // For foods like Salad
+    result = await db.query(
+      'food_emission_factor',
+      where: 'food_name = ? AND variant IS NULL',
+      whereArgs: [foodKey],
+    );
+  } else {
+    result = await db.query(
+      'food_emission_factor',
+      where: 'food_name = ? AND variant = ?',
+      whereArgs: [foodKey, variantKey],
+    );
+  }
+
+  if (result.isEmpty) {
+    debugPrint('[DB] ❌ No match for food=$foodKey variant=$variantKey');
+    return 0.0;
+  }
+
+  final carbon = (result.first['carbon'] as num).toDouble();
+
+  debugPrint(
+    '[DB] ✅ Match food=$foodKey variant=$variantKey carbon=$carbon',
+  );
+
+  return carbon;
+}
+
 }

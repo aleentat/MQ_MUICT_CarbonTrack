@@ -6,6 +6,7 @@ import 'dart:io';
 import '../database/db_helper.dart';
 import '../models/waste_diary_entry.dart';
 import '../models/travel_diary_entry.dart';
+import '../models/eating_diary_entry.dart';
 
 class CarbonDiaryPage extends StatefulWidget {
   @override
@@ -30,6 +31,7 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
   Future<void> _loadEntries() async {
     final waste = await DBHelper.instance.getAllWasteDiaryEntries();
     final travel = await DBHelper.instance.getAllTravelDiaryEntries();
+    final eating = await DBHelper.instance.getAllEatingDiaryEntries();
     // print("🗑️ Loaded ${waste.length} waste entries");
     // print("🚗 Loaded ${travel.length} travel entries");
 
@@ -41,6 +43,10 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
       ...travel.map(
         (e) =>
             UnifiedDiaryEntry(timestamp: e.timestamp, entry: e, type: 'travel'),
+      ),
+      ...eating.map(
+        (e) =>
+            UnifiedDiaryEntry(timestamp: e.timestamp, entry: e, type: 'eating'),
       ),
     ];
 
@@ -138,9 +144,9 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
                           ..._getFilteredLogsForSelectedDay().map((log) {
                             return log.type == 'waste'
                                 ? _buildWasteCard(log.entry as WasteDiaryEntry)
-                                : _buildTravelCard(
-                                  log.entry as TravelDiaryEntry,
-                                );
+                                : log.type == 'travel'
+                                ? _buildTravelCard(log.entry as TravelDiaryEntry)
+                                : _buildEatingCard(log.entry as EatingDiaryEntry);
                           }).toList(),
                         ],
                       ),
@@ -233,6 +239,63 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
     );
   }
 
+  Widget _buildEatingCard(EatingDiaryEntry log) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.blueGrey.shade100),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Card(
+          color: Color(0xFFE3F2FD),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: 2,
+          margin: EdgeInsets.zero, 
+          child: ListTile(
+            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            leading: Container(
+              decoration: BoxDecoration(
+                color: Colors.white, 
+                shape: BoxShape.circle,
+              ),
+              padding: EdgeInsets.all(10),
+              child: Icon(
+                Icons.restaurant_menu,
+                color: Color(0xFF1976D2),
+                size: 26,
+              ),
+            ),
+            title: Text(
+              '${log.name} ${log.variant != null ? '(${log.variant})' : ''}',
+              maxLines: 1,
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Qty: ${log.quantity}',
+                  style: TextStyle(fontSize: 12),
+                ),
+                Text(
+                  'Carbon: ${log.carbon.toStringAsFixed(2)} kgCO₂',
+                  style: TextStyle(fontSize: 12),
+                ),
+                Text(
+                  DateFormat.Hm().format(log.timestamp),
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildTravelCard(TravelDiaryEntry log) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
@@ -289,8 +352,10 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
   Widget _buildDailySummary(List<UnifiedDiaryEntry> logs) {
     int wasteCount = 0; // quantity
     int travelCount = 0; // log
+    int eatingCount = 0; // log
     double totalTravelCarbon = 0.0;
     double totalWasteCarbon = 0.0;
+    double totalEatingCarbon = 0.0;
 
     for (var log in logs) {
       if (log.type == 'waste') {
@@ -301,6 +366,10 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
         travelCount++;
         final travelEntry = log.entry as TravelDiaryEntry;
         totalTravelCarbon += travelEntry.carbon;
+      } else if (log.type == 'eating') {
+        eatingCount++;
+        final eatingEntry = log.entry as EatingDiaryEntry;
+        totalEatingCarbon += eatingEntry.carbon;
       }
     }
     return Container(
@@ -337,6 +406,7 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
         spacing: 10,
         children: [
           _buildChip("All", 'all'),
+          _buildChip("Eating", 'eating'),
           _buildChip("Waste", 'waste'),
           _buildChip("Travel", 'travel'),
         ],

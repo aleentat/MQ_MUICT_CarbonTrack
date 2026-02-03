@@ -1,40 +1,63 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../database/db_helper.dart';
+import '../models/eating_diary_entry.dart';
 
 class EatingCalculator extends StatefulWidget {
   @override
-  _EatingCalculatorState createState() =>
-      _EatingCalculatorState();
+  State<EatingCalculator> createState() => _EatingCalculatorState();
 }
 
 class _EatingCalculatorState extends State<EatingCalculator> {
-  final Map<String, double> menuCarbon = {
-    'Beef Burger': 5.2,
-    'Pork Rice': 3.5,
-    'Chicken Rice': 2.1,
-    'Pad Thai': 2.8,
-    'Fried Rice': 2.5,
-    'Vegetable Stir-fry': 0.9,
-    'Salad': 0.6,
-    'Pizza': 4.0,
-  };
+  final List<String> foods = ['Burger', 'Salad','Pad Krapow', 'Spaghetti','Steak', 'Fried Rice'];
+  final List<String> meats = ['Beef', 'Chicken', 'Pork', 'Fish'];
 
-  final Set<String> selectedMenus = {};
-  double totalCarbon = 0.0;
-  bool calculated = false;
+  String? selectedFood;
+  String? selectedMeat;
+  double? carbon;
 
-  void _calculateCarbon() {
-    double sum = 0.0;
-    for (var item in selectedMenus) {
-      sum += menuCarbon[item] ?? 0;
-    }
+  // ---------------- Fetch carbon from DB ----------------
+  Future<void> _selectMeat(String meat) async {
+    final value = await DBHelper.instance.getFoodCarbon(
+      selectedFood!,
+      selectedFood == 'Salad' ? null : meat,
+    );
+
+  debugPrint(
+    '[EatingCalculator] Food: $selectedFood | Meat: ${meat.isEmpty ? 'None' : meat} | Carbon: $value kg CO₂e',
+  );
 
     setState(() {
-      totalCarbon = sum;
-      calculated = true;
+      selectedMeat = meat;
+      carbon = value;
     });
   }
 
+  // ---------------- Save diary ----------------
+  Future<void> _saveDiary() async {
+    if (selectedFood == null || carbon == null) return;
+
+    await DBHelper.instance.insertEatingDiaryEntry(
+      EatingDiaryEntry(
+        name: selectedFood!,
+        variant: selectedMeat,
+        carbon: carbon!,
+        timestamp: DateTime.now(),
+      ),
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Saved to eating diary 🌱')),
+    );
+
+    setState(() {
+      selectedFood = null;
+      selectedMeat = null;
+      carbon = null;
+    });
+  }
+
+  // ---------------- UI ----------------
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -69,14 +92,24 @@ class _EatingCalculatorState extends State<EatingCalculator> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // ✅ HEADER (THIS WAS MISSING BEFORE)
               _buildHeaderCard(),
               const SizedBox(height: 25),
-              _buildMenuGrid(),
-              const SizedBox(height: 30),
-              _buildCalculateButton(),
-              if (calculated) ...[
+
+              _sectionTitle('Select food'),
+              _grid(foods, selectedFood, _selectFood),
+
+              if (selectedFood != null && selectedFood != 'Salad') ...[
+                const SizedBox(height: 25),
+                _sectionTitle('Select meat'),
+                _grid(meats, selectedMeat, _selectMeat),
+              ],
+
+              if (carbon != null) ...[
                 const SizedBox(height: 30),
                 _buildResultCard(),
+                const SizedBox(height: 20),
+                _buildSaveButton(),
               ],
             ],
           ),
@@ -85,14 +118,19 @@ class _EatingCalculatorState extends State<EatingCalculator> {
     );
   }
 
-  // Header
+  // ---------------- Widgets ----------------
+
   Widget _buildHeaderCard() {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: _cardDecoration(),
       child: Row(
         children: [
-          Image.asset('assets/gif/eat.gif', height: 90),
+          Image.asset(
+            'assets/gif/eat.gif',
+            height: 90,
+            fit: BoxFit.contain,
+          ),
           const SizedBox(width: 15),
           Expanded(
             child: Text(
@@ -105,127 +143,65 @@ class _EatingCalculatorState extends State<EatingCalculator> {
     );
   }
 
-  // Menu Grid
-  Widget _buildMenuGrid() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _sectionTitle('Select your menu'),
-        const SizedBox(height: 15),
-        GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          childAspectRatio: 1.4,
-          children:
-              menuCarbon.keys.map((menu) {
-                final bool selected = selectedMenus.contains(menu);
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      selected
-                          ? selectedMenus.remove(menu)
-                          : selectedMenus.add(menu);
-                    });
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color:
-                          selected
-                              ? const Color.fromARGB(255, 76, 175, 134)
-                              : Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color:
-                            selected
-                                ? const Color.fromARGB(255, 76, 175, 134)
-                                : Colors.grey.shade300,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black12,
-                          blurRadius: 5,
-                          offset: Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.restaurant_menu,
-                            color:
-                                selected ? Colors.white : Colors.green[700],
-                            size: 30,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            menu,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color:
-                                  selected
-                                      ? Colors.white
-                                      : Colors.black87,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${menuCarbon[menu]} kg CO₂',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color:
-                                  selected
-                                      ? Colors.white70
-                                      : Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-        ),
-      ],
+  Widget _grid(
+    List<String> items,
+    String? selected,
+    Function(String) onTap,
+  ) {
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: 12,
+      crossAxisSpacing: 12,
+      childAspectRatio: 1.4,
+      children: items.map((item) {
+        final isSelected = item == selected;
+
+        return GestureDetector(
+          onTap: () => onTap(item),
+          child: Container(
+            decoration: BoxDecoration(
+              color:
+                  isSelected
+                      ? const Color.fromARGB(255, 76, 175, 134)
+                      : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color:
+                    isSelected
+                        ? const Color.fromARGB(255, 76, 175, 134)
+                        : Colors.grey.shade300,
+              ),
+              boxShadow: const [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 5,
+                  offset: Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Center(
+              child: Text(
+                item,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                  color: isSelected ? Colors.white : Colors.black87,
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 
-  // Button
-  Widget _buildCalculateButton() {
-    return Center(
-      child: ElevatedButton(
-        onPressed:
-            selectedMenus.isEmpty ? null : _calculateCarbon,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color.fromARGB(255, 29, 71, 62),
-          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
-          ),
-        ),
-        child: Text(
-          'Calculate Carbon',
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-            color: Colors.white,
-          ),
-        ),
-      ),
-    );
-  }
-
-  // Result
   Widget _buildResultCard() {
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -239,14 +215,15 @@ class _EatingCalculatorState extends State<EatingCalculator> {
               ),
             ),
             const SizedBox(height: 10),
-            ...selectedMenus.map((m) => Text('🍽 $m')),
+            Text('🍽 $selectedFood'),
+            if (selectedMeat != null) Text('🥩 $selectedMeat'),
             const SizedBox(height: 12),
             Text(
-              '${totalCarbon.toStringAsFixed(2)} kg CO₂',
+              '${carbon!.toStringAsFixed(2)} kg CO₂e',
               style: GoogleFonts.poppins(
                 fontSize: 26,
                 fontWeight: FontWeight.bold,
-                color: Color.fromARGB(255, 226, 83, 73),
+                color: const Color.fromARGB(255, 226, 83, 73),
               ),
             ),
           ],
@@ -255,13 +232,52 @@ class _EatingCalculatorState extends State<EatingCalculator> {
     );
   }
 
-  // Helpers
+  Widget _buildSaveButton() {
+    return Center(
+      child: ElevatedButton(
+        onPressed: _saveDiary,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color.fromARGB(255, 29, 71, 62),
+          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
+        ),
+        child: Text(
+          'Save to Diary',
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ---------------- Helpers ----------------
+
+  void _selectFood(String food) {
+    setState(() {
+      selectedFood = food;
+      selectedMeat = null;
+      carbon = null;
+    });
+
+    if (food == 'Salad') {
+      _selectMeat('');
+    }
+  }
+
   Widget _sectionTitle(String title) {
-    return Text(
-      title,
-      style: GoogleFonts.poppins(
-        fontSize: 18,
-        fontWeight: FontWeight.bold,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Text(
+        title,
+        style: GoogleFonts.poppins(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
@@ -270,8 +286,12 @@ class _EatingCalculatorState extends State<EatingCalculator> {
     return BoxDecoration(
       color: Colors.white,
       borderRadius: BorderRadius.circular(16),
-      boxShadow: [
-        BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+      boxShadow: const [
+        BoxShadow(
+          color: Colors.black12,
+          blurRadius: 6,
+          offset: Offset(0, 3),
+        ),
       ],
     );
   }
