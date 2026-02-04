@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class ShoppingCalculator extends StatefulWidget {
   @override
@@ -62,7 +61,7 @@ class _ShoppingCalculatorState extends State<ShoppingCalculator> {
           foregroundColor: Colors.black,
           title: Text(
             'Shopping Calculator',
-            style: GoogleFonts.poppins(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 22,
             ),
@@ -103,7 +102,7 @@ class _ShoppingCalculatorState extends State<ShoppingCalculator> {
           Expanded(
             child: Text(
               'Every purchase leaves a footprint.\nLet’s track it 🌱',
-              style: GoogleFonts.poppins(fontSize: 15),
+              style: TextStyle(fontSize: 15),
             ),
           ),
         ],
@@ -179,7 +178,7 @@ class _ShoppingCalculatorState extends State<ShoppingCalculator> {
               ),
               Text(
                 _quantity.toString(),
-                style: GoogleFonts.poppins(
+                style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                 ),
@@ -209,7 +208,7 @@ class _ShoppingCalculatorState extends State<ShoppingCalculator> {
         ),
         child: Text(
           'Calculate Carbon',
-          style: GoogleFonts.poppins(
+          style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 16,
             color: Colors.white,
@@ -232,7 +231,7 @@ class _ShoppingCalculatorState extends State<ShoppingCalculator> {
           children: [
             Text(
               'Calculation Result',
-              style: GoogleFonts.poppins(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -243,7 +242,7 @@ class _ShoppingCalculatorState extends State<ShoppingCalculator> {
             const SizedBox(height: 10),
             Text(
               '${_carbonResult.toStringAsFixed(2)} kg CO₂',
-              style: GoogleFonts.poppins(
+              style: TextStyle(
                 fontSize: 26,
                 fontWeight: FontWeight.bold,
                 color: Color.fromARGB(255, 226, 83, 73),
@@ -259,7 +258,7 @@ class _ShoppingCalculatorState extends State<ShoppingCalculator> {
   Widget _sectionTitle(String title) {
     return Text(
       title,
-      style: GoogleFonts.poppins(
+      style: TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.bold,
       ),

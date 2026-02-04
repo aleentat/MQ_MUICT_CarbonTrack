@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:google_place/google_place.dart';
 import 'package:http/http.dart' as http;
 import '../database/db_helper.dart';
@@ -173,7 +172,7 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
-  TextStyle headingStyle = GoogleFonts.poppins(
+  TextStyle headingStyle = TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.bold,
     color: Color.fromARGB(255, 40, 69, 45),
@@ -300,7 +299,7 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
           Expanded(
             child: Text(
               'Track your travel footprint 🚗\nEvery trip counts',
-              style: GoogleFonts.poppins(fontSize: 15),
+              style: TextStyle(fontSize: 15),
             ),
           ),
         ],
@@ -381,7 +380,7 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
         ),
         child: Text(
           'Calculate Carbon',
-          style: GoogleFonts.poppins(
+          style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 16,
             color: Colors.white,
@@ -402,7 +401,7 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
           children: [
             Text(
               'Calculation Result',
-              style: GoogleFonts.poppins(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -413,7 +412,7 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
             const SizedBox(height: 10),
             Text(
               '${_carbonOutput.toStringAsFixed(2)} kg CO₂',
-              style: GoogleFonts.poppins(
+              style: TextStyle(
                 fontSize: 26,
                 fontWeight: FontWeight.bold,
                 color: const Color.fromARGB(255, 226, 83, 73),
@@ -438,7 +437,7 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
         ),
         child: Text(
           'Add to Diary',
-          style: GoogleFonts.poppins(
+          style: TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
@@ -480,7 +479,7 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
           foregroundColor: Colors.black,
           title: Text(
             'Travel Calculator',
-            style: GoogleFonts.poppins(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 22,
             ),

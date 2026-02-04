@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../models/weekly_eco_state.dart';
 
 class GamificationPage extends StatelessWidget {
@@ -52,7 +51,7 @@ class GamificationPage extends StatelessWidget {
           foregroundColor: Colors.black,
           title: Text(
             'Gamification',
-            style: GoogleFonts.poppins(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 22,
             ),
@@ -93,7 +92,7 @@ class GamificationPage extends StatelessWidget {
         children: [
           Text(
             'Your Monthly Forest',
-            style: GoogleFonts.poppins(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
@@ -162,7 +161,7 @@ class GamificationPage extends StatelessWidget {
         children: [
           Text(
             'Monthly Eco Progress',
-            style: GoogleFonts.poppins(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
@@ -220,7 +219,7 @@ class GamificationPage extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               value,
-              style: GoogleFonts.poppins(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),

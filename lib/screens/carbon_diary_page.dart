@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'dart:io';
@@ -95,7 +94,7 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
         appBar: AppBar(
           title: Text(
             'Carbon Diary Log',
-            style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+            style: TextStyle(fontWeight: FontWeight.bold),
           ),
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -416,7 +415,7 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
 
   Widget _buildChip(String label, String value) {
     return ChoiceChip(
-      label: Text(label, style: GoogleFonts.poppins(fontSize: 13)),
+      label: Text(label, style: TextStyle(fontSize: 13)),
       selected: _filter == value,
       selectedColor: Color.fromARGB(255, 72, 130, 96),
       backgroundColor: Colors.grey.shade100,
@@ -464,7 +463,7 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
           outsideDaysVisible: false,
         ),
         headerStyle: HeaderStyle(
-          titleTextStyle: GoogleFonts.poppins(
+          titleTextStyle: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),

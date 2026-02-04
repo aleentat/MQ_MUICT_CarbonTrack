@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../database/db_helper.dart';
 import '../models/eating_diary_entry.dart';
 
@@ -9,8 +8,23 @@ class EatingCalculator extends StatefulWidget {
 }
 
 class _EatingCalculatorState extends State<EatingCalculator> {
-  final List<String> foods = ['Burger', 'Salad','Pad Krapow', 'Spaghetti','Steak', 'Fried Rice'];
-  final List<String> meats = ['Beef', 'Chicken', 'Pork', 'Fish'];
+  final List<Map<String, String>> foods = [
+    {'name': 'Burger', 'image': 'assets/images/foods/burger.png'},
+    {'name': 'Salad', 'image': 'assets/images/foods/salad.png'},
+    {'name': 'Pad Krapow', 'image': 'assets/images/foods/pad_krapow.png'},
+    {'name': 'Spaghetti', 'image': 'assets/images/foods/spaghetti.png'},
+    {'name': 'Steak', 'image': 'assets/images/foods/steak.png'},
+    {'name': 'Fried Rice', 'image': 'assets/images/foods/fried_rice.png'},
+  ];
+
+  final List<Map<String, String>> meats = [
+    {'name': 'Beef', 'image': 'assets/images/foods/meat.png'},
+    {'name': 'Chicken', 'image': 'assets/images/foods/chicken.png'},
+    {'name': 'Pork', 'image': 'assets/images/foods/pork.png'},
+    {'name': 'Fish', 'image': 'assets/images/foods/fish.png'},
+  ];
+
+  final PageController _meatController = PageController(viewportFraction: 0.6);
 
   String? selectedFood;
   String? selectedMeat;
@@ -81,7 +95,7 @@ class _EatingCalculatorState extends State<EatingCalculator> {
           foregroundColor: Colors.black,
           title: Text(
             'Eating Calculator',
-            style: GoogleFonts.poppins(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 22,
             ),
@@ -97,12 +111,12 @@ class _EatingCalculatorState extends State<EatingCalculator> {
               const SizedBox(height: 25),
 
               _sectionTitle('Select food'),
-              _grid(foods, selectedFood, _selectFood),
+              _foodGrid(),
 
               if (selectedFood != null && selectedFood != 'Salad') ...[
                 const SizedBox(height: 25),
                 _sectionTitle('Select meat'),
-                _grid(meats, selectedMeat, _selectMeat),
+                _meatSlider(),
               ],
 
               if (carbon != null) ...[
@@ -135,7 +149,7 @@ class _EatingCalculatorState extends State<EatingCalculator> {
           Expanded(
             child: Text(
               'Choose what you ate today 🍽\nWe’ll calculate the footprint',
-              style: GoogleFonts.poppins(fontSize: 15),
+              style: TextStyle(fontSize: 15),
             ),
           ),
         ],
@@ -143,58 +157,148 @@ class _EatingCalculatorState extends State<EatingCalculator> {
     );
   }
 
-  Widget _grid(
-    List<String> items,
-    String? selected,
-    Function(String) onTap,
-  ) {
-    return GridView.count(
-      crossAxisCount: 2,
+  Widget _foodGrid() {
+    return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 12,
-      crossAxisSpacing: 12,
-      childAspectRatio: 1.4,
-      children: items.map((item) {
-        final isSelected = item == selected;
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 14,
+        crossAxisSpacing: 14,
+        childAspectRatio: 0.95,
+      ),
+      itemCount: foods.length,
+      itemBuilder: (context, index) {
+        final food = foods[index];
+        final isSelected = selectedFood == food['name'];
 
         return GestureDetector(
-          onTap: () => onTap(item),
+          onTap: () => _selectFood(food['name']!),
           child: Container(
             decoration: BoxDecoration(
               color:
                   isSelected
                       ? const Color.fromARGB(255, 76, 175, 134)
                       : Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color:
-                    isSelected
-                        ? const Color.fromARGB(255, 76, 175, 134)
-                        : Colors.grey.shade300,
-              ),
+              borderRadius: BorderRadius.circular(18),
               boxShadow: const [
-                BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 5,
-                  offset: Offset(0, 3),
+                BoxShadow(color: Colors.black12, blurRadius: 6),
+              ],
+            ),
+            child: Column(
+              children: [
+                Expanded(
+                  child: Center(
+                    child: Image.asset(food['image']!, width: 70, fit: BoxFit.contain),
+                  ),
+                ),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: BoxDecoration(
+                    color:
+                        isSelected
+                            ? const Color.fromARGB(255, 64, 160, 120)
+                            : Colors.grey.shade100,
+                    borderRadius: const BorderRadius.vertical(
+                      bottom: Radius.circular(18),
+                    ),
+                  ),
+                  child: Text(
+                    food['name']!,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: isSelected ? Colors.white : Colors.black,
+                    ),
+                  ),
                 ),
               ],
             ),
-            child: Center(
-              child: Text(
-                item,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                  color: isSelected ? Colors.white : Colors.black87,
-                ),
-              ),
-            ),
           ),
         );
-      }).toList(),
+      },
+    );
+  }
+
+  Widget _meatSlider() {
+    return SizedBox(
+      height: 190,
+      child: Stack(
+        children: [
+          PageView.builder(
+            controller: _meatController,
+            itemCount: meats.length,
+            onPageChanged: (index) {
+              _selectMeat(meats[index]['name']!);
+            },
+            itemBuilder: (context, index) {
+              final meat = meats[index];
+              final isSelected = selectedMeat == meat['name'];
+
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                margin: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color:
+                      isSelected
+                          ? const Color.fromARGB(255, 76, 175, 134)
+                          : Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black12, blurRadius: 6),
+                  ],
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Image.asset(meat['image']!, height: 80),
+                    const SizedBox(height: 10),
+                    Text(
+                      meat['name']!,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: isSelected ? Colors.white : Colors.black,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+
+          // ⬅ Arrow Left
+          Align(
+            alignment: Alignment.centerLeft,
+            child: IconButton(
+              icon: const Icon(Icons.arrow_back_ios),
+              onPressed: () {
+                _meatController.previousPage(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOut,
+                );
+              },
+            ),
+          ),
+
+          // ➡ Arrow Right
+          Align(
+            alignment: Alignment.centerRight,
+            child: IconButton(
+              icon: const Icon(Icons.arrow_forward_ios),
+              onPressed: () {
+                _meatController.nextPage(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOut,
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -209,7 +313,7 @@ class _EatingCalculatorState extends State<EatingCalculator> {
           children: [
             Text(
               'Your Meal Carbon Footprint',
-              style: GoogleFonts.poppins(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -220,7 +324,7 @@ class _EatingCalculatorState extends State<EatingCalculator> {
             const SizedBox(height: 12),
             Text(
               '${carbon!.toStringAsFixed(2)} kg CO₂e',
-              style: GoogleFonts.poppins(
+              style: TextStyle(
                 fontSize: 26,
                 fontWeight: FontWeight.bold,
                 color: const Color.fromARGB(255, 226, 83, 73),
@@ -245,7 +349,7 @@ class _EatingCalculatorState extends State<EatingCalculator> {
         ),
         child: Text(
           'Save to Diary',
-          style: GoogleFonts.poppins(
+          style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 16,
             color: Colors.white,
@@ -274,7 +378,7 @@ class _EatingCalculatorState extends State<EatingCalculator> {
       padding: const EdgeInsets.only(bottom: 12),
       child: Text(
         title,
-        style: GoogleFonts.poppins(
+        style: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.bold,
         ),

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
 import 'package:convex_bottom_bar/convex_bottom_bar.dart';
@@ -20,7 +19,6 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
-  double _totalTravelCarbon = 0.0;
   int _weeklyEcoScore = 0;
 
 
@@ -29,7 +27,7 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _loadData();
   }
-
+  // mock data gamification
   final List<int> _weeklyEcoScores = [5, 6, 4, 7]; 
 
   Future<void> _loadData() async {
@@ -63,10 +61,9 @@ class _HomePageState extends State<HomePage> {
 }
 
 Future<int> _calculateWeeklyEcoScore() async {
-  final travelEntries =
-      await DBHelper.instance.getAllTravelDiaryEntries();
-  final wasteEntries =
-      await DBHelper.instance.getAllWasteDiaryEntries();
+  final travelEntries = await DBHelper.instance.getAllTravelDiaryEntries();
+  final wasteEntries = await DBHelper.instance.getAllWasteDiaryEntries();
+  final foodEntries = await DBHelper.instance.getAllEatingDiaryEntries();
 
   final now = DateTime.now();
   final weekStart = DateTime(now.year, now.month, now.day)
@@ -88,6 +85,10 @@ Future<int> _calculateWeeklyEcoScore() async {
   }
 
   for (final e in wasteEntries) {
+    addEntry(e.timestamp, e.carbon);
+  }
+  
+  for (final e in foodEntries) {
     addEntry(e.timestamp, e.carbon);
   }
 
@@ -241,7 +242,7 @@ Future<int> _calculateWeeklyEcoScore() async {
               children: [
                 Text(
                   'Welcome 👋',
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.w800,
                   ),
@@ -313,7 +314,7 @@ Future<int> _calculateWeeklyEcoScore() async {
           children: [
             Text(
               'Weekly Eco Score',
-              style: GoogleFonts.poppins(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
@@ -444,7 +445,7 @@ Future<int> _calculateWeeklyEcoScore() async {
       children: [
         Text(
           'Eco Tips',
-          style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold),
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 15),
         SizedBox(
@@ -505,7 +506,7 @@ Future<int> _calculateWeeklyEcoScore() async {
       children: [
         Text(
           'Environmental News',
-          style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold),
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 10),
         Column(children: mockNews.map(_buildNewsCard).toList()),

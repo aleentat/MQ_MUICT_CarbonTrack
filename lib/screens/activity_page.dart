@@ -1,7 +1,6 @@
 import 'package:carbondiary/screens/eating_calculator.dart';
 import 'package:carbondiary/screens/shopping_calculator.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'travel_carbon_calculator.dart';
 import 'waste_sorting_guide.dart';
@@ -27,7 +26,7 @@ class _ActivityPageState extends State<ActivityPage> {
                 children: [
                   Text(
                     'My Activity',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: Colors.black,
@@ -77,7 +76,7 @@ class _ActivityPageState extends State<ActivityPage> {
             Center(
               child: Text(
                 'Choose an activity to log',
-                style: GoogleFonts.poppins(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
                   color: Colors.black87,

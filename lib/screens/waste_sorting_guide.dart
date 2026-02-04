@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../database/db_helper.dart';
 import '../models/waste_item.dart';
 import '../models/waste_diary_entry.dart';
@@ -353,7 +352,7 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
           Expanded(
             child: Text(
               'Track your travel footprint 🚗\nEvery trip counts',
-              style: GoogleFonts.poppins(fontSize: 15),
+              style: TextStyle(fontSize: 15),
             ),
           ),
         ],
@@ -390,7 +389,7 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
           foregroundColor: Colors.black,
           title: Text(
             'Waste Calculator',
-            style: GoogleFonts.poppins(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 22,
             ),
