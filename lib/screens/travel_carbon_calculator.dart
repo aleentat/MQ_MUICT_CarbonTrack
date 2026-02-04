@@ -5,6 +5,7 @@ import 'package:google_place/google_place.dart';
 import 'package:http/http.dart' as http;
 import '../database/db_helper.dart';
 import '../models/travel_diary_entry.dart';
+import '../services/statistic_service.dart';
 
 class TravelCarbonCalculator extends StatefulWidget {
   @override
@@ -108,6 +109,7 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
       endLocation: _destController.text,
     );
     await DBHelper.instance.insertTravelDiaryEntry(entry);
+    await StatisticService.sendTodaySummary();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(

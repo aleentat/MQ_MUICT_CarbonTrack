@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../database/db_helper.dart';
 import '../models/eating_diary_entry.dart';
+import '../services/statistic_service.dart';
 
 class EatingCalculator extends StatefulWidget {
   @override
@@ -59,6 +60,7 @@ class _EatingCalculatorState extends State<EatingCalculator> {
         timestamp: DateTime.now(),
       ),
     );
+    await StatisticService.sendTodaySummary();
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Saved to eating diary 🌱')),

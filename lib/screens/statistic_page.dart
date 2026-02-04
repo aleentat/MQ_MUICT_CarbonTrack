@@ -8,8 +8,6 @@ import '../services/api_service.dart';
 import 'dart:convert';
 import '../utils/eco_score_calculator.dart';
 
-
-
 class StatisticPage extends StatefulWidget {
   const StatisticPage({super.key});
 
@@ -45,98 +43,9 @@ class _StatisticPageState extends State<StatisticPage> {
     _loadData();
   }
 
-// SENDING STATISTICS TO BACKEND
-Future<void> _sendCurrentStatistics() async {
-  final dataMap = _selectedDataType == 'Travel'
-    ? travelData
-    : _selectedDataType == 'Waste'
-        ? wasteData
-        : _selectedDataType == 'Eating'
-            ? eatingData
-            : shoppingData;
-
-
-  if (dataMap.isEmpty) return;
-
-  final totalLogs = travelEntries.length + wasteEntries.length + eatingEntries.length + shoppingEntries.length;
-  final double travelCO2 = travelData.values.fold(0.0, (a, b) => a + b);
-  final double wasteCO2 = wasteData.values.fold(0.0, (a, b) => a + b);
-  final double eatingCO2 = eatingData.values.fold(0.0, (a, b) => a + b);
-  final double shoppingCO2 = shoppingData.values.fold(0.0, (a, b) => a + b);
-  final totalDailyCO2 = travelCO2 + wasteCO2 + eatingCO2 + shoppingCO2;
-  final username = await DBHelper.instance.getOrCreateUsername();
-  final user = await DBHelper.instance.getUserProfile();
-  final age = user?['age'] ?? 0;
-  final appOpenCount = await DBHelper.instance.getTodayAppOpenCount();
-
-
-  final summary = UsageSummary(
-  userId: username,
-  age: age,
-  date: DateTime.now().toIso8601String().split('T').first,
-  totalLogs: totalLogs,
-  appOpens: appOpenCount,
-  co2Breakdown: {
-    'travel': travelCO2,
-    'waste': wasteCO2,
-    'eating': eatingCO2,
-    'shopping': shoppingCO2,
-  },
-  totalDailyCO2: totalDailyCO2,
-  ecoScore: EcoScoreCalculator.dailyScore(totalDailyCO2),
-  );
-
-  print(totalDailyCO2);
-  print("--------------------");
-
-  final success = await ApiService.sendSummary(summary);
-  if (!success) {
-    // print error details to console
-    print('Failed to send summary: ${jsonEncode(summary.toJson())}');
-  }
-
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(
-        success
-            ? 'Summary sent successfully'
-            : 'Failed to send summary',
-      ),
-    ),
-  );
-}
-
 int _weekOfMonth(DateTime date) {
   return ((date.day - 1) ~/ 7) + 1;
 }
-
-int _calculateWeeklyEcoScore() {
-  if (_selectedTimeframe != 'Weekly') return 0;
-
-  int weeklyScore = 0;
-  travelData.forEach((_, dailyCO2) {
-    weeklyScore += EcoScoreCalculator.dailyScore(dailyCO2);
-
-  });
-
-  wasteData.forEach((_, dailyCO2) {
-    weeklyScore += EcoScoreCalculator.dailyScore(dailyCO2);
-
-  });
-
-  eatingData.forEach((_, dailyCO2) {
-    weeklyScore += EcoScoreCalculator.dailyScore(dailyCO2);
-
-  });
-
-  shoppingData.forEach((_, dailyCO2) {
-    weeklyScore += EcoScoreCalculator.dailyScore(dailyCO2);
-
-  });
-
-  return weeklyScore;
-}
-
 
   Future<void> _loadData() async {
     travelEntries = await DBHelper.instance.getAllTravelDiaryEntries();
@@ -193,13 +102,6 @@ int _calculateWeeklyEcoScore() {
       prevEatingData = oldEatingData;
       prevShoppingData = oldShoppingData;
     });
-
-
-    print('Travel weekly days: ${travelData.length}');
-    print('Waste weekly days: ${wasteData.length}');
-    print('Eating weekly days: ${eatingData.length}');
-    print('Shopping weekly days: ${shoppingData.length}');
-    print('Weekly eco score: ${_calculateWeeklyEcoScore()}');
   }
 
   bool _isInRange(DateTime timestamp, DateTime refDate) {
@@ -410,16 +312,7 @@ int _calculateWeeklyEcoScore() {
           'Statistics',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: Colors.transparent,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.upload_file),
-            tooltip: 'Send statistics',
-            onPressed: () async {
-              await _sendCurrentStatistics();
-            },
-          ),
-        ],
+        backgroundColor: Colors.transparent
       ),
       backgroundColor: Colors.transparent,
       body: Padding(

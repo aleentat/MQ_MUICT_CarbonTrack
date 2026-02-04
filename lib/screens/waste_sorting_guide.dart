@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
+import '../services/statistic_service.dart';
 
 class WasteSortingGuide extends StatefulWidget {
   @override
@@ -277,6 +278,7 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
                                   await DBHelper.instance.insertWasteDiaryEntry(
                                     entry,
                                   );
+                                  await StatisticService.sendTodaySummary();
                                   if (mounted) {
                                     Navigator.pop(context);
                                     ScaffoldMessenger.of(context).showSnackBar(
