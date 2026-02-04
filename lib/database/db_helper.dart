@@ -8,6 +8,7 @@ import '../models/waste_item.dart';
 import '../models/waste_diary_entry.dart';
 import '../models/travel_diary_entry.dart';
 import '../models/eating_diary_entry.dart';
+import 'dart:math';
 
 class DBHelper {
   DBHelper._privateConstructor();  
@@ -117,6 +118,7 @@ class DBHelper {
         note TEXT
       )
     ''');
+    await createUserTable(db);
 
     // ---------- Food emission factors ----------
     await db.insert('food_emission_factor', {'food_name':'Burger','variant':'Beef','carbon':5.140434});
@@ -220,7 +222,7 @@ class DBHelper {
     await db.insert('waste_items', {'name': 'Toxic/Poisonous', 'category': 'Symbol Guide', 'subcategory': 'Non-Recyclable', 'type': 'toxic.png', 'tip': 'Do not dispose in drains or bins. Take to a toxic waste facility or special collection point.'});
   }
 
-static const int _dbVersion = 7;
+static const int _dbVersion = 9;
 
 Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     // v2: add carbon column
@@ -292,6 +294,19 @@ Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     )
   ''');
 }
+    if (oldVersion < 8) {
+      await createUserTable(db);
+    }
+
+    if (oldVersion < 9){
+      await db.execute('''
+      CREATE TABLE app_usage (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date TEXT,
+        count INTEGER
+      )
+      ''');
+    }
 
 
   }
@@ -462,5 +477,95 @@ Future<double> getFoodCarbon(String food, String? variant) async {
 
   return carbon;
 }
+
+// User Profile table
+Future<void> createUserTable(Database db) async {
+  await db.execute('''
+    CREATE TABLE IF NOT EXISTS user_profile (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT,
+      age INTEGER,
+      created_at TEXT
+    )
+  ''');
+}
+
+Future<void> saveUserProfile(String username, int age) async {
+  final db = await database;
+
+  await db.delete('user_profile'); // keep only ONE user
+
+  await db.insert(
+    'user_profile',
+    {
+      'username': username,
+      'age': age,
+      'created_at': DateTime.now().toIso8601String(),
+    },
+  );
+}
+
+Future<Map<String, dynamic>?> getUserProfile() async {
+  final db = await database;
+  final result = await db.query('user_profile', limit: 1);
+  return result.isNotEmpty ? result.first : null;
+}
+
+Future<String> getOrCreateUsername() async {
+  final user = await getUserProfile();
+
+  if (user != null && user['username'] != null) {
+    return user['username'];
+  }
+
+  final randomUsername = generateRandomUsername();
+  await saveUserProfile(randomUsername, 0); // age default
+
+  return randomUsername;
+}
+String generateRandomUsername() {
+  const animals = ['Fox', 'Tree', 'Leaf', 'Panda', 'Otter', 'Bee'];
+  final random = Random();
+  return '${animals[random.nextInt(animals.length)]}_${random.nextInt(999)}';
+}
+// Count app launches
+Future<void> incrementAppOpen() async {
+  final db = await database;
+  final today = DateTime.now().toIso8601String().split('T').first;
+
+  final result = await db.query(
+    'app_usage',
+    where: 'date = ?',
+    whereArgs: [today],
+  );
+
+  if (result.isEmpty) {
+    await db.insert('app_usage', {
+      'date': today,
+      'count': 1,
+    });
+  } else {
+    await db.update(
+      'app_usage',
+      {'count': (result.first['count'] as int) + 1},
+      where: 'date = ?',
+      whereArgs: [today],
+    );
+  }
+}
+Future<int> getTodayAppOpenCount() async {
+  final db = await database;
+  final today = DateTime.now().toIso8601String().split('T').first;
+
+  final result = await db.query(
+    'app_usage',
+    where: 'date = ?',
+    whereArgs: [today],
+  );
+
+  if (result.isEmpty) return 0;
+  return result.first['count'] as int;
+}
+
 
 }

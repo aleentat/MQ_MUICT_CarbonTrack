@@ -224,7 +224,7 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
               children: [
                 if (log.quantity != null)
                   Text('Qty: ${log.quantity}', style: TextStyle(fontSize: 12)),
-                  Text('Carbon: ${log.carbon}', style: TextStyle(fontSize: 12)),
+                  Text('Carbon: ${log.carbon.toStringAsFixed(4)} kgCO₂', style: TextStyle(fontSize: 12)),
                 if (log.note != null && log.note!.isNotEmpty)
                   Text('Note: ${log.note}', style: TextStyle(fontSize: 12)),
                 Text(
@@ -281,7 +281,7 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
                   style: TextStyle(fontSize: 12),
                 ),
                 Text(
-                  'Carbon: ${log.carbon.toStringAsFixed(2)} kgCO₂',
+                  'Carbon: ${log.carbon.toStringAsFixed(4)} kgCO₂',
                   style: TextStyle(fontSize: 12),
                 ),
                 Text(

@@ -11,6 +11,7 @@ import 'gamification_page.dart';
 import '../widgets/home_tree_widget.dart';
 import '../models/weekly_eco_state.dart';
 import '../utils/eco_score_calculator.dart';
+import 'user_profile_page.dart'; 
 
 class HomePage extends StatefulWidget {
   @override
@@ -174,6 +175,7 @@ Future<int> _calculateWeeklyEcoScore() async {
           backgroundColor: Colors.transparent,
           elevation: 0,
           actions: [
+            IconButton(icon: const Icon(Icons.person), onPressed: () {Navigator.push(context, MaterialPageRoute(builder: (_) => const UserProfilePage(),),);},),
             IconButton(icon: Icon(Icons.refresh), onPressed: _loadData),
           ],
         ),

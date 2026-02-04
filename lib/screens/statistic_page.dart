@@ -21,6 +21,11 @@ class _StatisticPageState extends State<StatisticPage> {
   String _selectedDataType = 'Travel';
   String _selectedTimeframe = 'Weekly';
   DateTime _currentViewDate = DateTime.now();
+  List<dynamic> travelEntries = [];
+  List<dynamic> wasteEntries = [];
+  List<dynamic> eatingEntries = [];
+  List<dynamic> shoppingEntries = [];
+
 
   Map<String, double> travelData = {};
   Map<String, double> wasteData = {};
@@ -53,16 +58,34 @@ Future<void> _sendCurrentStatistics() async {
 
   if (dataMap.isEmpty) return;
 
-  final totalLogs = dataMap.length;
-  final totalDailyCO2 = dataMap.values.fold(0.0, (a, b) => a + b);
+  final totalLogs = travelEntries.length + wasteEntries.length + eatingEntries.length + shoppingEntries.length;
+  final double travelCO2 = travelData.values.fold(0.0, (a, b) => a + b);
+  final double wasteCO2 = wasteData.values.fold(0.0, (a, b) => a + b);
+  final double eatingCO2 = eatingData.values.fold(0.0, (a, b) => a + b);
+  final double shoppingCO2 = shoppingData.values.fold(0.0, (a, b) => a + b);
+  final totalDailyCO2 = travelCO2 + wasteCO2 + eatingCO2 + shoppingCO2;
+  final username = await DBHelper.instance.getOrCreateUsername();
+  final user = await DBHelper.instance.getUserProfile();
+  final age = user?['age'] ?? 0;
+  final appOpenCount = await DBHelper.instance.getTodayAppOpenCount();
+
 
   final summary = UsageSummary(
-    userId: 'userAt${DateTime.now().millisecondsSinceEpoch}',
-    date: DateTime.now().toIso8601String().split('T').first,
-    totalLogs: totalLogs,
-    totalDailyCO2: totalDailyCO2,
-    ecoScore: EcoScoreCalculator.dailyScore(totalDailyCO2),
+  userId: username,
+  age: age,
+  date: DateTime.now().toIso8601String().split('T').first,
+  totalLogs: totalLogs,
+  appOpens: appOpenCount,
+  co2Breakdown: {
+    'travel': travelCO2,
+    'waste': wasteCO2,
+    'eating': eatingCO2,
+    'shopping': shoppingCO2,
+  },
+  totalDailyCO2: totalDailyCO2,
+  ecoScore: EcoScoreCalculator.dailyScore(totalDailyCO2),
   );
+
   print(totalDailyCO2);
   print("--------------------");
 
@@ -116,10 +139,10 @@ int _calculateWeeklyEcoScore() {
 
 
   Future<void> _loadData() async {
-    final travelEntries = await DBHelper.instance.getAllTravelDiaryEntries();
-    final wasteEntries = await DBHelper.instance.getAllWasteDiaryEntries();
-    final eatingEntries = await DBHelper.instance.getAllEatingDiaryEntries();
-    final shoppingEntries = []; // To be implemented: fetch shopping diary entries
+    travelEntries = await DBHelper.instance.getAllTravelDiaryEntries();
+    wasteEntries = await DBHelper.instance.getAllWasteDiaryEntries();
+    eatingEntries = await DBHelper.instance.getAllEatingDiaryEntries();
+    shoppingEntries = []; // To be implemented: fetch shopping diary entries
 
     Map<String, double> newTravelData = {};
     Map<String, double> newWasteData = {};
