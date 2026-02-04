@@ -28,7 +28,7 @@ class _HomePageState extends State<HomePage> {
     _loadData();
   }
   // mock data gamification
-  final List<int> _weeklyEcoScores = [5, 6, 4, 7]; 
+  final List<int> _weeklyEcoScores = [1, 6, 4, 7]; 
 
   Future<void> _loadData() async {
   final travelEntries =

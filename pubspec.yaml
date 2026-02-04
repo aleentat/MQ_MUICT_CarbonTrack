@@ -42,4 +42,5 @@ flutter:
     - assets/images/symbols/
     - assets/images/examples/
     - assets/images/foods/
+    - assets/images/trees/
     - .env

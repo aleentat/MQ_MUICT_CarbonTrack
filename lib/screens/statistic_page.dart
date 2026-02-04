@@ -221,19 +221,6 @@ int _weekOfMonth(DateTime date) {
     return names[month];
   }
 
-  String _getPreviousLabel() {
-    switch (_selectedTimeframe) {
-      case 'Weekly':
-        return 'last week';
-      case 'Monthly':
-        return 'last month';
-      case 'Yearly':
-        return 'last year';
-      default:
-        return '';
-    }
-  }
-
   String _getSelectedRangeText() {
     DateTime start, end;
     final d = _currentViewDate;
