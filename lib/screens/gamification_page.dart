@@ -15,11 +15,11 @@ class GamificationPage extends StatelessWidget {
   String _treeAsset(TreeStage stage) {
     switch (stage) {
       case TreeStage.sprout:
-        return 'assets/images/tree.png';
+        return 'assets/images/trees/drytree.png';
       case TreeStage.healthy:
-        return 'assets/images/tree.png';
+        return 'assets/images/trees/tree.png';
       case TreeStage.blooming:
-        return 'assets/images/tree.png';
+        return 'assets/images/trees/blooming.png';
     }
   }
 
@@ -74,7 +74,6 @@ class GamificationPage extends StatelessWidget {
   // 🌳 2x2 Forest Grid
   Widget _buildIsometricForest(List<int> weeklyScores) {
     const double tileWidth = 120;
-    const double tileHeight = 80;
     const double xOffset = 60;
     const double yOffset = 40;
 
@@ -135,19 +134,6 @@ class GamificationPage extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildLandWithTree(TreeStage stage, int weekIndex) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        Image.asset(_treeAsset(stage), height: 80),
-        const SizedBox(height: 4),
-        Image.asset('assets/images/land.png', height: 40),
-        const SizedBox(height: 6),
-        Text('Week ${weekIndex + 1}', style: const TextStyle(fontSize: 12)),
-      ],
     );
   }
 
