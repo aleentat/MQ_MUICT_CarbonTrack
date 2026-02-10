@@ -9,10 +9,6 @@ import 'database/db_helper.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
-  // Reset db
-  // final dbPath = await getDatabasesPath();
-  // await deleteDatabase(join(dbPath, 'waste_items.db'));
-  
   runApp(CarbonDiaryApp());
   
   await DBHelper.instance.incrementAppOpen();

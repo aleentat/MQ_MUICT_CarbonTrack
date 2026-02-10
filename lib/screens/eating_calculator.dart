@@ -16,26 +16,50 @@ class _EatingCalculatorState extends State<EatingCalculator> {
     {'name': 'Spaghetti', 'image': 'assets/images/foods/spaghetti.png'},
     {'name': 'Steak', 'image': 'assets/images/foods/steak.png'},
     {'name': 'Fried Rice', 'image': 'assets/images/foods/fried_rice.png'},
+    // ADD immages later
+    {'name': 'Massaman', 'image': 'assets/images/foods/example.jpg'},
+    {'name': 'Tom Yum Goong', 'image': 'assets/images/foods/example.jpg'},
+    {'name': 'Green Curry', 'image': 'assets/images/foods/example.jpg'},
+    {'name': 'Tom Kha Gai', 'image': 'assets/images/foods/example.jpg'},
+    {'name': 'Khao Man Gai', 'image': 'assets/images/foods/example.jpg'},
+    {'name': 'Khao Moo Daeng', 'image': 'assets/images/foods/example.jpg'},
+    {'name': 'Boat Noodles', 'image': 'assets/images/foods/example.jpg'},
+    {'name': 'Pad See Ew', 'image': 'assets/images/foods/example.jpg'},
+    {'name': 'Pad Kee Mao', 'image': 'assets/images/foods/example.jpg'},
+    {'name': 'Larb', 'image': 'assets/images/foods/example.jpg'},
+    {'name': 'Omelette Rice', 'image': 'assets/images/foods/example.jpg'},
   ];
 
-  final List<Map<String, String>> meats = [
-    {'name': 'Beef', 'image': 'assets/images/foods/meat.png'},
-    {'name': 'Chicken', 'image': 'assets/images/foods/chicken.png'},
-    {'name': 'Pork', 'image': 'assets/images/foods/pork.png'},
-    {'name': 'Fish', 'image': 'assets/images/foods/fish.png'},
-  ];
+  String _meatImage(String meat) {
+  switch (meat) {
+    case 'Beef':
+      return 'assets/images/foods/meat.png';
+    case 'Chicken':
+      return 'assets/images/foods/chicken.png';
+    case 'Pork':
+      return 'assets/images/foods/pork.png';
+    case 'Fish':
+      return 'assets/images/foods/fish.png';
+    default:
+    // add more cases as needed
+      return 'assets/images/foods/example.jpg';
+  }
+}
 
   final PageController _meatController = PageController(viewportFraction: 0.6);
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   String? selectedFood;
   String? selectedMeat;
+  List<String> availableVariants = [];
   double? carbon;
 
   // ---------------- Fetch carbon from DB ----------------
   Future<void> _selectMeat(String meat) async {
     final value = await DBHelper.instance.getFoodCarbon(
       selectedFood!,
-      selectedFood == 'Salad' ? null : meat,
+      meat,
     );
 
   debugPrint(
@@ -57,7 +81,7 @@ class _EatingCalculatorState extends State<EatingCalculator> {
         name: selectedFood!,
         variant: selectedMeat,
         carbon: carbon!,
-        timestamp: DateTime.now(),
+        timestamp: DateTime.now().subtract(const Duration(days: 1)),
       ),
     );
     await StatisticService.sendTodaySummary();
@@ -108,11 +132,11 @@ class _EatingCalculatorState extends State<EatingCalculator> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ✅ HEADER (THIS WAS MISSING BEFORE)
               _buildHeaderCard(),
               const SizedBox(height: 25),
-
               _sectionTitle('Select food'),
+              _foodSearchBox(),
+              const SizedBox(height: 15),
               _foodGrid(),
 
               if (selectedFood != null && selectedFood != 'Salad') ...[
@@ -159,7 +183,35 @@ class _EatingCalculatorState extends State<EatingCalculator> {
     );
   }
 
+  Widget _foodSearchBox() {
+  return TextField(
+    controller: _searchController,
+    onChanged: (value) {
+      setState(() {
+        _searchQuery = value.toLowerCase();
+      });
+    },
+    decoration: InputDecoration(
+      hintText: 'Search food...',
+      prefixIcon: const Icon(Icons.search),
+      filled: true,
+      fillColor: Colors.white,
+      contentPadding: const EdgeInsets.symmetric(vertical: 14),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(30),
+        borderSide: BorderSide.none,
+      ),
+    ),
+  );
+}
+
   Widget _foodGrid() {
+    final filteredFoods = foods.where((food) {
+    return food['name']!
+        .toLowerCase()
+        .contains(_searchQuery.toLowerCase());
+     }).toList();
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -169,9 +221,9 @@ class _EatingCalculatorState extends State<EatingCalculator> {
         crossAxisSpacing: 14,
         childAspectRatio: 0.95,
       ),
-      itemCount: foods.length,
+      itemCount: filteredFoods.length,
       itemBuilder: (context, index) {
-        final food = foods[index];
+        final food = filteredFoods[index];
         final isSelected = selectedFood == food['name'];
 
         return GestureDetector(
@@ -224,19 +276,20 @@ class _EatingCalculatorState extends State<EatingCalculator> {
   }
 
   Widget _meatSlider() {
+    if (availableVariants.isEmpty) return const SizedBox();
     return SizedBox(
       height: 190,
       child: Stack(
         children: [
           PageView.builder(
             controller: _meatController,
-            itemCount: meats.length,
+            itemCount: availableVariants.length,
             onPageChanged: (index) {
-              _selectMeat(meats[index]['name']!);
+              _selectMeat(availableVariants[index]);
             },
             itemBuilder: (context, index) {
-              final meat = meats[index];
-              final isSelected = selectedMeat == meat['name'];
+              final meatName = availableVariants[index];
+              final isSelected = selectedMeat == meatName;
 
               return AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
@@ -257,10 +310,10 @@ class _EatingCalculatorState extends State<EatingCalculator> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Image.asset(meat['image']!, height: 80),
+                    Image.asset(_meatImage(meatName), height: 80),
                     const SizedBox(height: 10),
                     Text(
-                      meat['name']!,
+                      meatName,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: isSelected ? Colors.white : Colors.black,
@@ -363,17 +416,30 @@ class _EatingCalculatorState extends State<EatingCalculator> {
 
   // ---------------- Helpers ----------------
 
-  void _selectFood(String food) {
-    setState(() {
-      selectedFood = food;
-      selectedMeat = null;
-      carbon = null;
-    });
+  void _selectFood(String food) async {
+  setState(() {
+    selectedFood = food;
+    selectedMeat = null;
+    carbon = null;
+    availableVariants = [];
+  });
 
-    if (food == 'Salad') {
-      _selectMeat('');
-    }
+  if (food == 'Salad') {
+    _selectMeat('');
+    return;
   }
+
+  final variants = await DBHelper.instance.getFoodVariants(food);
+
+  setState(() {
+    availableVariants = variants;
+  });
+
+  if (variants.length == 1) {
+    _selectMeat(variants.first);
+  }
+}
+
 
   Widget _sectionTitle(String title) {
     return Padding(
