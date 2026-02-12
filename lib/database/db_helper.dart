@@ -8,6 +8,7 @@ import '../models/waste_item.dart';
 import '../models/waste_diary_entry.dart';
 import '../models/travel_diary_entry.dart';
 import '../models/eating_diary_entry.dart';
+import '../models/shopping_diary_entry.dart';
 import 'dart:math';
 
 class DBHelper {
@@ -121,6 +122,28 @@ class DBHelper {
     ''');
 
     await db.execute('''
+      CREATE TABLE shopping_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        category TEXT NOT NULL,
+        name TEXT NOT NULL,
+        emission_factor REAL NOT NULL
+      )
+      ''');
+
+    await db.execute('''
+      CREATE TABLE shopping_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        category TEXT NOT NULL,
+        timestamp TEXT NOT NULL,
+        quantity INTEGER NOT NULL,
+        note TEXT,
+        carbon REAL NOT NULL,
+        unit REAL NOT NULL
+      )
+      ''');
+
+    await db.execute('''
       CREATE TABLE user_profile (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT,
@@ -136,6 +159,33 @@ class DBHelper {
         count INTEGER
       )
       ''');
+
+    // ---------- Shopping emission factors ----------
+    await db.insert('shopping_items', {'category':'Clothing','name':'Shirt / Top','emission_factor':4.46200});
+    await db.insert('shopping_items', {'category':'Clothing','name':'Pants / Jeans','emission_factor':13.38600});
+    await db.insert('shopping_items', {'category':'Clothing','name':'Shorts','emission_factor':6.69300});
+    await db.insert('shopping_items', {'category':'Clothing','name':'Skirt','emission_factor':5.57750});
+    await db.insert('shopping_items', {'category':'Clothing','name':'Dress','emission_factor':6.69300});
+    await db.insert('shopping_items', {'category':'Clothing','name':'Jacket','emission_factor':13.38600});
+    await db.insert('shopping_items', {'category':'Clothing','name':'Sweater / Hoodie','emission_factor':7.80850});
+    await db.insert('shopping_items', {'category':'Clothing','name':'Bra','emission_factor':1.11550});
+    await db.insert('shopping_items', {'category':'Clothing','name':'Underwear','emission_factor':1.11550});
+    await db.insert('shopping_items', {'category':'Clothing','name':'Socks','emission_factor':1.33860});
+    await db.insert('shopping_items', {'category':'Clothing','name':'Hat','emission_factor':2.23100});
+    await db.insert('shopping_items', {'category':'Clothing','name':'Scarf','emission_factor':3.34650});
+    await db.insert('shopping_items', {'category':'Clothing','name':'Shoes','emission_factor':15.61700});
+    await db.insert('shopping_items', {'category':'Clothing','name':'Handbag','emission_factor':13.38600});
+    await db.insert('shopping_items', {'category':'Clothing','name':'Backpack','emission_factor':22.31000});
+    await db.insert('shopping_items', {'category':'Clothing','name':'Wallet','emission_factor':4.46200});
+
+    await db.insert('shopping_items', {'category':'Electronics','name':'Smartphone','emission_factor':12.43274});
+    await db.insert('shopping_items', {'category':'Electronics','name':'Laptop','emission_factor':74.59644});
+    await db.insert('shopping_items', {'category':'Electronics','name':'Tablet','emission_factor':22.37893});
+    await db.insert('shopping_items', {'category':'Electronics','name':'Desktop computer','emission_factor':248.65480});
+    await db.insert('shopping_items', {'category':'Electronics','name':'Large electrical appliances','emission_factor':32.67000});
+    await db.insert('shopping_items', {'category':'Electronics','name':'Small electrical appliances','emission_factor':11.29590});
+    await db.insert('shopping_items', {'category':'Electronics','name':'Fridge / Freezer','emission_factor':222.52983});
+
 
     // ---------- Food emission factors ----------
     await db.insert('food_emission_factor', {'food_name':'Burger','variant':'Beef','carbon':5.140434});
@@ -462,6 +512,31 @@ Future<List<String>> getFoodVariants(String food) async {
       .map((row) => row['variant'] as String)
       .toList();
 }
+
+// --------------------------- Shopping Diary ---------------------------
+Future<List<Map<String, dynamic>>> getShoppingItems(String category) async {
+  final db = await database;
+  return await db.query(
+    'shopping_items',
+    where: 'category = ?',
+    whereArgs: [category],
+  );
+}
+
+Future<void> insertShoppingLog(ShoppingDiaryEntry entry) async {
+  final db = await database;
+  await db.insert('shopping_logs', entry.toMap());
+}
+
+Future<List<ShoppingDiaryEntry>> getAllShoppingDiaryEntries() async {
+  final db = await database;
+  final maps = await db.query('shopping_logs');
+
+  return List.generate(maps.length, (i) {
+    return ShoppingDiaryEntry.fromMap(maps[i]);
+  });
+}
+
 
 
 // User Profile table
