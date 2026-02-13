@@ -10,7 +10,7 @@ class StatisticService {
     final travel = await db.getAllTravelDiaryEntries();
     final waste = await db.getAllWasteDiaryEntries();
     final eating = await db.getAllEatingDiaryEntries();
-    final shopping = []; // not implemented yet
+    final shopping = await db.getAllShoppingDiaryEntries();
 
     final travelCO2 =
         travel.fold<double>(0, (s, e) => s + e.carbon);
@@ -18,7 +18,8 @@ class StatisticService {
         waste.fold<double>(0, (s, e) => s + e.carbon);
     final eatingCO2 =
         eating.fold<double>(0, (s, e) => s + e.carbon);
-    final shoppingCO2 = 0.0;
+    final shoppingCO2 =
+        shopping.fold<double>(0, (s, e) => s + e.carbon);
 
     final totalLogs =
         travel.length + waste.length + eating.length + shopping.length;

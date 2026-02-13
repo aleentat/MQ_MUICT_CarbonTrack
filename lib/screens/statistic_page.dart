@@ -51,7 +51,7 @@ int _weekOfMonth(DateTime date) {
     travelEntries = await DBHelper.instance.getAllTravelDiaryEntries();
     wasteEntries = await DBHelper.instance.getAllWasteDiaryEntries();
     eatingEntries = await DBHelper.instance.getAllEatingDiaryEntries();
-    shoppingEntries = []; // To be implemented: fetch shopping diary entries
+    shoppingEntries = await DBHelper.instance.getAllShoppingDiaryEntries();
 
     Map<String, double> newTravelData = {};
     Map<String, double> newWasteData = {};
@@ -89,6 +89,16 @@ int _weekOfMonth(DateTime date) {
       } else if (_isInRange(entry.timestamp, _getPreviousViewDate())) {
         final key = _formatKey(entry.timestamp);
         oldEatingData[key] = (oldEatingData[key] ?? 0) + entry.carbon;
+      }
+    }
+
+    for (var entry in shoppingEntries) {
+      if (_isInRange(entry.timestamp, _currentViewDate)) {
+        final key = _formatKey(entry.timestamp);
+        newShoppingData[key] = (newShoppingData[key] ?? 0) + entry.carbon;
+      } else if (_isInRange(entry.timestamp, _getPreviousViewDate())) {
+        final key = _formatKey(entry.timestamp);
+        oldShoppingData[key] = (oldShoppingData[key] ?? 0) + entry.carbon;
       }
     }
     

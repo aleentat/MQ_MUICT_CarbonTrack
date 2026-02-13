@@ -6,6 +6,7 @@ import '../database/db_helper.dart';
 import '../models/waste_diary_entry.dart';
 import '../models/travel_diary_entry.dart';
 import '../models/eating_diary_entry.dart';
+import '../models/shopping_diary_entry.dart';
 
 class CarbonDiaryPage extends StatefulWidget {
   @override
@@ -31,8 +32,7 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
     final waste = await DBHelper.instance.getAllWasteDiaryEntries();
     final travel = await DBHelper.instance.getAllTravelDiaryEntries();
     final eating = await DBHelper.instance.getAllEatingDiaryEntries();
-    // print("🗑️ Loaded ${waste.length} waste entries");
-    // print("🚗 Loaded ${travel.length} travel entries");
+    final shopping = await DBHelper.instance.getAllShoppingDiaryEntries();
 
     List<UnifiedDiaryEntry> combined = [
       ...waste.map(
@@ -46,6 +46,10 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
       ...eating.map(
         (e) =>
             UnifiedDiaryEntry(timestamp: e.timestamp, entry: e, type: 'eating'),
+      ),
+      ...shopping.map(
+        (e) => UnifiedDiaryEntry(
+            timestamp: e.timestamp, entry: e, type: 'shopping'),
       ),
     ];
 
@@ -145,6 +149,8 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
                                 ? _buildWasteCard(log.entry as WasteDiaryEntry)
                                 : log.type == 'travel'
                                 ? _buildTravelCard(log.entry as TravelDiaryEntry)
+                                : log.type == 'shopping'
+                                ? _buildShoppingCard(log.entry as ShoppingDiaryEntry)
                                 : _buildEatingCard(log.entry as EatingDiaryEntry);
                           }).toList(),
                         ],
@@ -155,6 +161,62 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
       ),
     );
   }
+
+  Widget _buildShoppingCard(ShoppingDiaryEntry log) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+    child: Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.blueGrey.shade100),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Card(
+        color: Color(0xFFFFF3E0),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        elevation: 2,
+        margin: EdgeInsets.zero,
+        child: ListTile(
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          leading: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            padding: EdgeInsets.all(10),
+            child: Icon(
+              Icons.shopping_bag,
+              color: Colors.orange,
+              size: 26,
+            ),
+          ),
+          title: Text(
+            log.name,
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Category: ${log.category}',
+                style: TextStyle(fontSize: 12),
+              ),
+              Text(
+                'Carbon: ${log.carbon.toStringAsFixed(4)} kgCO₂',
+                style: TextStyle(fontSize: 12),
+              ),
+              Text(
+                DateFormat.Hm().format(log.timestamp),
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
 
   Widget _buildWasteCard(WasteDiaryEntry log) {
     return Padding(
@@ -352,9 +414,11 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
     int wasteCount = 0; // quantity
     int travelCount = 0; // log
     int eatingCount = 0; // log
+    int shoppingCount = 0; // log
     double totalTravelCarbon = 0.0;
     double totalWasteCarbon = 0.0;
     double totalEatingCarbon = 0.0;
+    double totalShoppingCarbon = 0.0;
 
     for (var log in logs) {
       if (log.type == 'waste') {
@@ -369,6 +433,9 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
         eatingCount++;
         final eatingEntry = log.entry as EatingDiaryEntry;
         totalEatingCarbon += eatingEntry.carbon;
+      } else if (log.type == 'shopping') {
+        final shoppingEntry = log.entry as ShoppingDiaryEntry;
+        totalShoppingCarbon += shoppingEntry.carbon;
       }
     }
     return Container(
@@ -408,6 +475,7 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
           _buildChip("Eating", 'eating'),
           _buildChip("Waste", 'waste'),
           _buildChip("Travel", 'travel'),
+          _buildChip("Shopping", 'shopping'),
         ],
       ),
     );

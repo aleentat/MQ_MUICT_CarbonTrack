@@ -1,6 +1,6 @@
 class ShoppingDiaryEntry {
   final String name;
-  final String type;
+  final String category;
   final DateTime timestamp;
   final int quantity;
   final String? note;
@@ -9,7 +9,7 @@ class ShoppingDiaryEntry {
 
   ShoppingDiaryEntry({
     required this.name,
-    required this.type,
+    required this.category,
     required this.timestamp,
     this.quantity = 1,
     this.note = '',
@@ -20,7 +20,7 @@ class ShoppingDiaryEntry {
   Map<String, dynamic> toMap() {
     return {
       'name': name,
-      'type': type,
+      'category': category,
       'timestamp': timestamp.toIso8601String(),
       'quantity': quantity,
       'note': note,
@@ -32,7 +32,7 @@ class ShoppingDiaryEntry {
   factory ShoppingDiaryEntry.fromMap(Map<String, dynamic> map) {
     return ShoppingDiaryEntry(
       name: map['name'],
-      type: map['type'],
+      category: map['category'],
       timestamp: DateTime.parse(map['timestamp']),
       quantity: map['quantity'],
       note: map['note'],
