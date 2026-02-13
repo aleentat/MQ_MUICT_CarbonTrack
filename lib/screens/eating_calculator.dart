@@ -9,25 +9,27 @@ class EatingCalculator extends StatefulWidget {
 }
 
 class _EatingCalculatorState extends State<EatingCalculator> {
+  bool _showAllFoods = false;
+
   final List<Map<String, String>> foods = [
     {'name': 'Burger', 'image': 'assets/images/foods/burger.png'},
     {'name': 'Salad', 'image': 'assets/images/foods/salad.png'},
-    {'name': 'Pad Krapow', 'image': 'assets/images/foods/pad_krapow.png'},
+    {'name': 'Pad Krapow', 'image': 'assets/images/foods/pad.png'},
     {'name': 'Spaghetti', 'image': 'assets/images/foods/spaghetti.png'},
     {'name': 'Steak', 'image': 'assets/images/foods/steak.png'},
     {'name': 'Fried Rice', 'image': 'assets/images/foods/fried_rice.png'},
     // ADD immages later
-    {'name': 'Massaman', 'image': 'assets/images/foods/example.jpg'},
-    {'name': 'Tom Yum Goong', 'image': 'assets/images/foods/example.jpg'},
-    {'name': 'Green Curry', 'image': 'assets/images/foods/example.jpg'},
-    {'name': 'Tom Kha Gai', 'image': 'assets/images/foods/example.jpg'},
-    {'name': 'Khao Man Gai', 'image': 'assets/images/foods/example.jpg'},
-    {'name': 'Khao Moo Daeng', 'image': 'assets/images/foods/example.jpg'},
-    {'name': 'Boat Noodles', 'image': 'assets/images/foods/example.jpg'},
-    {'name': 'Pad See Ew', 'image': 'assets/images/foods/example.jpg'},
-    {'name': 'Pad Kee Mao', 'image': 'assets/images/foods/example.jpg'},
-    {'name': 'Larb', 'image': 'assets/images/foods/example.jpg'},
-    {'name': 'Omelette Rice', 'image': 'assets/images/foods/example.jpg'},
+    {'name': 'Massaman', 'image': 'assets/images/foods/pad.png'},
+    {'name': 'Tom Yum Goong', 'image': 'assets/images/foods/soup.png'},
+    {'name': 'Green Curry', 'image': 'assets/images/foods/soup.png'},
+    {'name': 'Tom Kha Gai', 'image': 'assets/images/foods/soup.png'},
+    {'name': 'Khao Man Gai', 'image': 'assets/images/foods/fried_rice.png'},
+    {'name': 'Khao Moo Daeng', 'image': 'assets/images/foods/pad.png'},
+    {'name': 'Boat Noodles', 'image': 'assets/images/foods/noodle.png'},
+    {'name': 'Pad See Ew', 'image': 'assets/images/foods/noodle.png'},
+    {'name': 'Pad Kee Mao', 'image': 'assets/images/foods/pad.png'},
+    {'name': 'Larb', 'image': 'assets/images/foods/pad.png'},
+    {'name': 'Omelette Rice', 'image': 'assets/images/foods/omelette.png'},
   ];
 
   String _meatImage(String meat) {
@@ -137,7 +139,7 @@ class _EatingCalculatorState extends State<EatingCalculator> {
               _sectionTitle('Select food'),
               _foodSearchBox(),
               const SizedBox(height: 15),
-              _foodGrid(),
+              _foodList(),
 
               if (selectedFood != null && selectedFood != 'Salad') ...[
                 const SizedBox(height: 25),
@@ -201,77 +203,98 @@ class _EatingCalculatorState extends State<EatingCalculator> {
         borderRadius: BorderRadius.circular(30),
         borderSide: BorderSide.none,
       ),
-    ),
-  );
-}
-
-  Widget _foodGrid() {
-    final filteredFoods = foods.where((food) {
-    return food['name']!
-        .toLowerCase()
-        .contains(_searchQuery.toLowerCase());
-     }).toList();
-
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: 14,
-        crossAxisSpacing: 14,
-        childAspectRatio: 0.95,
       ),
-      itemCount: filteredFoods.length,
-      itemBuilder: (context, index) {
-        final food = filteredFoods[index];
-        final isSelected = selectedFood == food['name'];
+    );
+  }
 
-        return GestureDetector(
-          onTap: () => _selectFood(food['name']!),
-          child: Container(
-            decoration: BoxDecoration(
-              color:
-                  isSelected
-                      ? const Color.fromARGB(255, 76, 175, 134)
-                      : Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              boxShadow: const [
-                BoxShadow(color: Colors.black12, blurRadius: 6),
-              ],
-            ),
-            child: Column(
-              children: [
-                Expanded(
-                  child: Center(
-                    child: Image.asset(food['image']!, width: 70, fit: BoxFit.contain),
-                  ),
+  Widget _foodList() {
+    final filteredFoods =
+        foods.where((food) {
+          return food['name']!.toLowerCase().contains(
+            _searchQuery.toLowerCase(),
+          );
+        }).toList();
+
+    const int initialItemCount = 6;
+    final displayedFoods =
+        _showAllFoods
+            ? filteredFoods
+            : filteredFoods.take(initialItemCount).toList();
+
+    return Column(
+      children: [
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: displayedFoods.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 10),
+          itemBuilder: (context, index) {
+            final food = displayedFoods[index];
+            final isSelected = selectedFood == food['name'];
+            return GestureDetector(
+              onTap: () => _selectFood(food['name']!),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 14,
+                  horizontal: 16,
                 ),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  decoration: BoxDecoration(
-                    color:
-                        isSelected
-                            ? const Color.fromARGB(255, 64, 160, 120)
-                            : Colors.grey.shade100,
-                    borderRadius: const BorderRadius.vertical(
-                      bottom: Radius.circular(18),
-                    ),
-                  ),
-                  child: Text(
-                    food['name']!,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: isSelected ? Colors.white : Colors.black,
-                    ),
-                  ),
+                decoration: BoxDecoration(
+                  color:
+                      isSelected
+                          ? const Color.fromARGB(255, 76, 175, 134)
+                          : Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black12, blurRadius: 6),
+                  ],
                 ),
-              ],
+                child: Row(
+                  children: [
+                    const SizedBox(width: 5),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.asset(
+                        food['image']!,
+                        width: 45,
+                        height: 45,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    const SizedBox(width: 25),
+                    Expanded(
+                      child: Text(
+                        food['name']!,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: isSelected ? Colors.white : Colors.black,
+                        ),
+                      ),
+                    ),
+                    if (isSelected)
+                      const Icon(Icons.check_circle, color: Colors.white),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+
+        // Show More / Less Button
+        if (filteredFoods.length > initialItemCount)
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _showAllFoods = !_showAllFoods;
+              });
+            },
+            child: Text(
+              _showAllFoods ? 'Show Less ▲' : 'Show More ▼',
+              style: const TextStyle(fontWeight: FontWeight.bold, color: Color.fromARGB(255, 15, 89, 91)),
             ),
           ),
-        );
-      },
+      ],
     );
   }
 

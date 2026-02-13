@@ -27,8 +27,10 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _loadData();
   }
-  // mock data gamification
-  final List<int> _weeklyEcoScores = [1, 6, 4, 7]; 
+
+  List<int> _monthlyWeeklyScores = [0, 0, 0, 0];
+  List<List<double>> _weeklyDailyCarbon = [];
+  List<List<int>> _weeklyDailyScores = [];
 
   Future<void> _loadData() async {
   final travelEntries =
@@ -54,55 +56,127 @@ class _HomePageState extends State<HomePage> {
   }
 
   final score = await _calculateWeeklyEcoScore();
+  final monthlyScores = await _calculateMonthlyWeeklyScores();
 
   setState(() {
     _weeklyEcoScore = score;
+    _monthlyWeeklyScores = monthlyScores;
   });
 }
 
 Future<int> _calculateWeeklyEcoScore() async {
-  final travelEntries = await DBHelper.instance.getAllTravelDiaryEntries();
-  final wasteEntries = await DBHelper.instance.getAllWasteDiaryEntries();
-  final foodEntries = await DBHelper.instance.getAllEatingDiaryEntries();
+    final travelEntries = await DBHelper.instance.getAllTravelDiaryEntries();
+    final wasteEntries = await DBHelper.instance.getAllWasteDiaryEntries();
+    final foodEntries = await DBHelper.instance.getAllEatingDiaryEntries();
 
-  final now = DateTime.now();
-  final weekStart = DateTime(now.year, now.month, now.day)
-      .subtract(Duration(days: now.weekday - 1));
-  final weekEnd = weekStart.add(const Duration(days: 6));
+    final now = DateTime.now();
+    final weekStart = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).subtract(Duration(days: now.weekday - 1));
+    final weekEnd = weekStart.add(const Duration(days: 6));
 
-  final Map<String, double> dailyTotals = {};
+    final Map<String, double> dailyTotals = {};
 
-  void addEntry(DateTime timestamp, double carbon) {
-    final d = DateTime(timestamp.year, timestamp.month, timestamp.day);
-    if (!d.isBefore(weekStart) && !d.isAfter(weekEnd)) {
-      final key = DateFormat('E').format(d); // Mon–Sun (same as StatisticPage)
-      dailyTotals[key] = (dailyTotals[key] ?? 0) + carbon;
+    void addEntry(DateTime timestamp, double carbon) {
+      final d = DateTime(timestamp.year, timestamp.month, timestamp.day);
+      if (!d.isBefore(weekStart) && !d.isAfter(weekEnd)) {
+        final key = DateFormat(
+          'E',
+        ).format(d); // Mon–Sun (same as StatisticPage)
+        dailyTotals[key] = (dailyTotals[key] ?? 0) + carbon;
+      }
     }
+
+    for (final e in travelEntries) {
+      addEntry(e.timestamp, e.carbon);
+    }
+
+    for (final e in wasteEntries) {
+      addEntry(e.timestamp, e.carbon);
+    }
+
+    for (final e in foodEntries) {
+      addEntry(e.timestamp, e.carbon);
+    }
+
+    int weeklyScore = 0;
+    dailyTotals.forEach((day, dailyCO2) {
+      weeklyScore += EcoScoreCalculator.dailyScore(dailyCO2);
+    });
+
+    print('HOME weekly eco score: $weeklyScore');
+    print('Daily totals: $dailyTotals');
+
+    return weeklyScore;
   }
 
-  for (final e in travelEntries) {
-    addEntry(e.timestamp, e.carbon);
+  Future<List<int>> _calculateMonthlyWeeklyScores() async {
+    final travelEntries = await DBHelper.instance.getAllTravelDiaryEntries();
+    final wasteEntries = await DBHelper.instance.getAllWasteDiaryEntries();
+    final foodEntries = await DBHelper.instance.getAllEatingDiaryEntries();
+
+    DateTime now = DateTime.now();
+    DateTime firstDayOfMonth = DateTime(now.year, now.month, 1);
+
+    List<int> weeklyScores = [];
+    List<List<double>> weeklyCarbonData = [];
+    List<List<int>> weeklyScoreData = [];
+
+    // Loop 4 weeks
+    for (int week = 0; week < 4; week++) {
+      DateTime weekStart = firstDayOfMonth.add(Duration(days: week * 7));
+      DateTime weekEnd = weekStart.add(const Duration(days: 6));
+
+      Map<int, double> dailyCarbon = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0};
+
+      void addEntry(DateTime timestamp, double carbon) {
+        final d = DateTime(timestamp.year, timestamp.month, timestamp.day);
+
+        if (!d.isBefore(weekStart) && !d.isAfter(weekEnd)) {
+          dailyCarbon[d.weekday] = (dailyCarbon[d.weekday] ?? 0) + carbon;
+        }
+      }
+
+      for (final e in travelEntries) {
+        addEntry(e.timestamp, e.carbon);
+      }
+
+      for (final e in wasteEntries) {
+        addEntry(e.timestamp, e.carbon);
+      }
+
+      for (final e in foodEntries) {
+        addEntry(e.timestamp, e.carbon);
+      }
+
+      int weeklyScore = 0;
+      List<double> dailyCarbonList = [];
+      List<int> dailyScoreList = [];
+
+      for (int i = 1; i <= 7; i++) {
+        double carbon = dailyCarbon[i] ?? 0;
+        int score = EcoScoreCalculator.dailyScore(carbon);
+
+        dailyCarbonList.add(carbon);
+        dailyScoreList.add(score);
+        weeklyScore += score;
+      }
+
+      weeklyScores.add(weeklyScore);
+      weeklyCarbonData.add(dailyCarbonList);
+      weeklyScoreData.add(dailyScoreList);
+    }
+
+    setState(() {
+      _monthlyWeeklyScores = weeklyScores;
+      _weeklyDailyCarbon = weeklyCarbonData;
+      _weeklyDailyScores = weeklyScoreData;
+    });
+
+    return weeklyScores;
   }
-
-  for (final e in wasteEntries) {
-    addEntry(e.timestamp, e.carbon);
-  }
-  
-  for (final e in foodEntries) {
-    addEntry(e.timestamp, e.carbon);
-  }
-
-  int weeklyScore = 0;
-  dailyTotals.forEach((day, dailyCO2) {
-    weeklyScore += EcoScoreCalculator.dailyScore(dailyCO2);
-  });
-
-  print('HOME weekly eco score: $weeklyScore');
-  print('Daily totals: $dailyTotals');
-
-  return weeklyScore;
-}
-
 
   void _onItemTapped(int index) {
     setState(() {
@@ -206,19 +280,7 @@ Future<int> _calculateWeeklyEcoScore() async {
         children: [
           _buildWelcomeSection(),
           const SizedBox(height: 10),
-          GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => GamificationPage(
-                    weeklyEcoScores: _weeklyEcoScores,
-                  ),
-                ),
-              );
-            },
-            child: _buildEcoScoreBar(),
-          ),
+          _buildEcoScoreBar(),
           const SizedBox(height: 6),
           _buildCarbonTipBubble(),
           const SizedBox(height: 40),
@@ -258,11 +320,6 @@ Future<int> _calculateWeeklyEcoScore() async {
           Expanded(
             flex: 1,
             child: Image.asset('assets/gif/earth.gif', height: 150),
-            // child: Lottie.asset(
-            //   'assets/lottie/earth.json',
-            //   height: 100,
-            //   repeat: true,
-            // ),
           ),
         ],
       ),
@@ -270,118 +327,126 @@ Future<int> _calculateWeeklyEcoScore() async {
   }
 
   Widget _buildEcoScoreBar() {
-  final int weeklyEcoScore = _weeklyEcoScore;
+    final int weeklyEcoScore = _weeklyEcoScore;
 
-  TreeStage treeStage;
-  if (weeklyEcoScore >= 6) {
-    treeStage = TreeStage.blooming;
-  } else if (weeklyEcoScore >= 4) {
-    treeStage = TreeStage.healthy;
-  } else {
-    treeStage = TreeStage.sprout;
-  }
+    TreeStage treeStage;
+    if (weeklyEcoScore >= 7) {
+      treeStage = TreeStage.blooming;
+    } else if (weeklyEcoScore >= 5) {
+      treeStage = TreeStage.healthy;
+    } else if (weeklyEcoScore >= 3) {
+      treeStage = TreeStage.sprout;
+    } else if (weeklyEcoScore >= 1) {
+      treeStage = TreeStage.seed;
+    } else {
+      treeStage = TreeStage.dry;
+    }
 
-  // Week range display
-  DateTime now = DateTime.now();
-  DateTime weekStart = now.subtract(Duration(days: now.weekday - 1));
-  DateTime weekEnd = weekStart.add(const Duration(days: 6));
-  String weekRange =
-      '${DateFormat('d MMM').format(weekStart)} - ${DateFormat('d MMM yyyy').format(weekEnd)}';
+    DateTime now = DateTime.now();
+    DateTime weekStart = now.subtract(Duration(days: now.weekday - 1));
+    DateTime weekEnd = weekStart.add(const Duration(days: 6));
+    String weekRange =
+        '${DateFormat('d MMM').format(weekStart)} - ${DateFormat('d MMM yyyy').format(weekEnd)}';
 
-  // Progress bar value (eco-score based)
-  final double maxScore = 7.0;
-  final double progressValue =
-      (weeklyEcoScore / maxScore).clamp(0.0, 1.0);
-
-  return Container(
-    padding: const EdgeInsets.all(23),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      boxShadow: const [
-        BoxShadow(
-          color: Colors.black12,
-          blurRadius: 6,
-          offset: Offset(0, 2),
-        ),
-      ],
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // 🔹 Title row
-        Row(
-          children: [
-            Text(
-              'Weekly Eco Score',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: const [
+          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 2)),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Title + Date
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                'Weekly Eco Score',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              '($weekRange)',
-              style: const TextStyle(fontSize: 13),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 15),
-
-        Row(
-          children: [
-            HomeTreeWidget(stage: treeStage),
-
-            const SizedBox(width: 16),
-
-            Expanded(
-              child: Column(
+              const SizedBox(width: 8),
+              Text(
+                '($weekRange)',
+                style: const TextStyle(fontSize: 13, color: Colors.grey),
+              ),
+            ],
+          ),
+          const SizedBox(height: 25),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Tree
+              HomeTreeWidget(stage: treeStage),
+              const SizedBox(width: 25),
+              // Score + Stage
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      color: Colors.grey[300],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: LinearProgressIndicator(
-                        value: progressValue,
-                        minHeight: 14,
-                        backgroundColor: Colors.transparent,
-                        color: _treeColor(treeStage),
-                      ),
+                  Text(
+                    '$weeklyEcoScore',
+                    style: const TextStyle(
+                      fontSize: 40,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-
-                  const SizedBox(height: 14),
-
+                  const SizedBox(height: 6),
                   Text(
-                    'Score: $weeklyEcoScore • ${_treeLabel(treeStage)}',
-                    style: const TextStyle(fontSize: 13),
+                    _treeLabel(treeStage),
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
+            ],
+          ),
+          const SizedBox(height: 25),
+          // Button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color.fromARGB(255, 96, 176, 158),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+              onPressed: () async {
+                await _loadData();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => GamificationPage(
+                      weeklyEcoScores: _monthlyWeeklyScores,
+                      weeklyDailyCarbon: _weeklyDailyCarbon,
+                      weeklyDailyScores: _weeklyDailyScores,
+                    ),
+                  ),
+                );
+              },
+              child: const Text(
+                'Go to My Forest 🌳',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
+              ),
             ),
-          ],
-        ),
-      ],
-    ),
-  );
-}
-  Color _treeColor(TreeStage stage) {
-    switch (stage) {
-      case TreeStage.sprout:
-        return Colors.brown;
-      case TreeStage.healthy:
-        return Colors.green;
-      case TreeStage.blooming:
-        return Colors.lightGreen;
-    }
+          ),
+        ],
+      ),
+    );
   }
+
   String _treeLabel(TreeStage stage) {
     switch (stage) {
+      case TreeStage.dry:
+        return 'Dry';
+      case TreeStage.seed:
+        return 'Seed';
       case TreeStage.sprout:
         return 'Sprout';
       case TreeStage.healthy:
@@ -423,7 +488,7 @@ Future<int> _calculateWeeklyEcoScore() async {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  "Keeping your weekly travel emissions under 20kg of CO₂ is a great way to care for the planet ! ",
+                  "Keeping your weekly emissions under 70kg of CO₂ is a great way to care for the planet ! ",
                   style: TextStyle(color: Colors.white, fontSize: 14),
                 ),
               ],
@@ -460,7 +525,7 @@ Future<int> _calculateWeeklyEcoScore() async {
                 margin: const EdgeInsets.only(right: 12),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color.fromARGB(255, 255, 253, 236),
+                  color: const Color.fromARGB(255, 255, 255, 255),
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
@@ -519,7 +584,6 @@ Future<int> _calculateWeeklyEcoScore() async {
       margin: const EdgeInsets.symmetric(vertical: 10),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.green.shade200, width: 1),
       ),
       color: const Color(0xFFF5FFF8), 
       elevation: 3,

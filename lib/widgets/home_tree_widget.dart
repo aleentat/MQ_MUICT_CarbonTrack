@@ -8,12 +8,16 @@ class HomeTreeWidget extends StatelessWidget {
 
   String _assetForStage() {
     switch (stage) {
+      case TreeStage.dry:
+        return 'assets/images/trees/drytree.png';
+      case TreeStage.seed:
+        return 'assets/images/trees/seed.png';
       case TreeStage.sprout:
-        return 'assets/gif/tree_sprout.gif';
+        return 'assets/images/trees/sprout.png';
       case TreeStage.healthy:
-        return 'assets/gif/tree_healthy.gif';
+        return 'assets/images/trees/tree.png';
       case TreeStage.blooming:
-        return 'assets/gif/tree_blooming.gif';
+        return 'assets/images/trees/blooming.png';
     }
   }
 
