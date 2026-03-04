@@ -18,6 +18,9 @@ class _ShoppingCalculatorState extends State<ShoppingCalculator> {
   double _carbonResult = 0.0;
   bool _calculated = false;
 
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
   final List<String> categories = [
     'Clothing',
     'Electronics',
@@ -120,6 +123,8 @@ class _ShoppingCalculatorState extends State<ShoppingCalculator> {
             children: [
               _buildHeaderCard(),
               const SizedBox(height: 25),
+              _productSearchBox(),
+              const SizedBox(height: 25),
               _buildCategorySelector(),
               const SizedBox(height: 25),
               _buildProductSelector(),
@@ -153,6 +158,28 @@ class _ShoppingCalculatorState extends State<ShoppingCalculator> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _productSearchBox() {
+    return TextField(
+      controller: _searchController,
+      onChanged: (value) {
+        setState(() {
+          _searchQuery = value.toLowerCase();
+        });
+      },
+      decoration: InputDecoration(
+        hintText: 'Search product...',
+        prefixIcon: const Icon(Icons.search),
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(vertical: 14),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30),
+          borderSide: BorderSide.none,
+        ),
       ),
     );
   }

@@ -84,7 +84,7 @@ class _EatingCalculatorState extends State<EatingCalculator> {
         variant: selectedMeat,
         carbon: carbon!,
         // Date are now set to yesterday for better statistic visualization
-        timestamp: DateTime.now().subtract(const Duration(days: 1)),
+        timestamp: DateTime.now(),
       ),
     );
     await StatisticService.sendTodaySummary();

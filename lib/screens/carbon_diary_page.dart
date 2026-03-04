@@ -143,7 +143,7 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
                       ? Center(child: Text("No entries for selected date"))
                       : ListView(
                         children: [
-                          _buildDailySummary(_getFilteredLogsForSelectedDay()),
+                          // _buildDailySummary(_getFilteredLogsForSelectedDay()),
                           ..._getFilteredLogsForSelectedDay().map((log) {
                             return log.type == 'waste'
                                 ? _buildWasteCard(log.entry as WasteDiaryEntry)
@@ -309,7 +309,7 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
           borderRadius: BorderRadius.circular(12),
         ),
         child: Card(
-          color: Color(0xFFE3F2FD),
+          color: Color.fromARGB(255, 222, 219, 206),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -325,7 +325,7 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
               padding: EdgeInsets.all(10),
               child: Icon(
                 Icons.restaurant_menu,
-                color: Color(0xFF1976D2),
+                color: Color.fromARGB(255, 110, 97, 39),
                 size: 26,
               ),
             ),
@@ -410,60 +410,60 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
     );
   }
 
-  Widget _buildDailySummary(List<UnifiedDiaryEntry> logs) {
-    int wasteCount = 0; // quantity
-    int travelCount = 0; // log
-    int eatingCount = 0; // log
-    int shoppingCount = 0; // log
-    double totalTravelCarbon = 0.0;
-    double totalWasteCarbon = 0.0;
-    double totalEatingCarbon = 0.0;
-    double totalShoppingCarbon = 0.0;
+  // Widget _buildDailySummary(List<UnifiedDiaryEntry> logs) {
+  //   int wasteCount = 0; // quantity
+  //   int travelCount = 0; // log
+  //   int eatingCount = 0; // log
+  //   int shoppingCount = 0; // log
+  //   double totalTravelCarbon = 0.0;
+  //   double totalWasteCarbon = 0.0;
+  //   double totalEatingCarbon = 0.0;
+  //   double totalShoppingCarbon = 0.0;
 
-    for (var log in logs) {
-      if (log.type == 'waste') {
-        final wasteEntry = log.entry as WasteDiaryEntry;
-        wasteCount += wasteEntry.quantity;
-        totalWasteCarbon += wasteEntry.carbon;
-      } else if (log.type == 'travel') {
-        travelCount++;
-        final travelEntry = log.entry as TravelDiaryEntry;
-        totalTravelCarbon += travelEntry.carbon;
-      } else if (log.type == 'eating') {
-        eatingCount++;
-        final eatingEntry = log.entry as EatingDiaryEntry;
-        totalEatingCarbon += eatingEntry.carbon;
-      } else if (log.type == 'shopping') {
-        final shoppingEntry = log.entry as ShoppingDiaryEntry;
-        totalShoppingCarbon += shoppingEntry.carbon;
-      }
-    }
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Card(
-        color: const Color.fromARGB(255, 255, 250, 225),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        elevation: 2,
-        margin: EdgeInsets.zero,
-        child: Padding(
-          padding: const EdgeInsets.all(14.0),
-          child: Row(
-            children: [
-              Icon(Icons.summarize, size: 18, color: Colors.blueGrey),
-              SizedBox(width: 12),
-              Text(
-                '♻️ $wasteCount  💨 ${totalWasteCarbon.toStringAsFixed(4)} kgCO₂  ||  🚗 $travelCount  💨 ${totalTravelCarbon.toStringAsFixed(2)} kgCO₂',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  //   for (var log in logs) {
+  //     if (log.type == 'waste') {
+  //       final wasteEntry = log.entry as WasteDiaryEntry;
+  //       wasteCount += wasteEntry.quantity;
+  //       totalWasteCarbon += wasteEntry.carbon;
+  //     } else if (log.type == 'travel') {
+  //       travelCount++;
+  //       final travelEntry = log.entry as TravelDiaryEntry;
+  //       totalTravelCarbon += travelEntry.carbon;
+  //     } else if (log.type == 'eating') {
+  //       eatingCount++;
+  //       final eatingEntry = log.entry as EatingDiaryEntry;
+  //       totalEatingCarbon += eatingEntry.carbon;
+  //     } else if (log.type == 'shopping') {
+  //       final shoppingEntry = log.entry as ShoppingDiaryEntry;
+  //       totalShoppingCarbon += shoppingEntry.carbon;
+  //     }
+  //   }
+  //   return Container(
+  //     margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+  //     decoration: BoxDecoration(
+  //       borderRadius: BorderRadius.circular(14),
+  //     ),
+  //     child: Card(
+  //       color: const Color.fromARGB(255, 255, 250, 225),
+  //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+  //       elevation: 2,
+  //       margin: EdgeInsets.zero,
+  //       child: Padding(
+  //         padding: const EdgeInsets.all(14.0),
+  //         child: Row(
+  //           children: [
+  //             Icon(Icons.summarize, size: 18, color: Colors.blueGrey),
+  //             SizedBox(width: 12),
+  //             Text(
+  //               '♻️ $wasteCount  💨 ${totalWasteCarbon.toStringAsFixed(4)} kgCO₂  ||  🚗 $travelCount  💨 ${totalTravelCarbon.toStringAsFixed(2)} kgCO₂',
+  //               style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+  //             ),
+  //           ],
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Widget _buildFilterChips() {
     return Padding(
