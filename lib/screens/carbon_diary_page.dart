@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'dart:io';
 import '../database/db_helper.dart';
 import '../models/waste_diary_entry.dart';
 import '../models/travel_diary_entry.dart';
+import '../models/eating_diary_entry.dart';
+import '../models/shopping_diary_entry.dart';
 
 class CarbonDiaryPage extends StatefulWidget {
   @override
@@ -30,8 +31,8 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
   Future<void> _loadEntries() async {
     final waste = await DBHelper.instance.getAllWasteDiaryEntries();
     final travel = await DBHelper.instance.getAllTravelDiaryEntries();
-    // print("🗑️ Loaded ${waste.length} waste entries");
-    // print("🚗 Loaded ${travel.length} travel entries");
+    final eating = await DBHelper.instance.getAllEatingDiaryEntries();
+    final shopping = await DBHelper.instance.getAllShoppingDiaryEntries();
 
     List<UnifiedDiaryEntry> combined = [
       ...waste.map(
@@ -41,6 +42,14 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
       ...travel.map(
         (e) =>
             UnifiedDiaryEntry(timestamp: e.timestamp, entry: e, type: 'travel'),
+      ),
+      ...eating.map(
+        (e) =>
+            UnifiedDiaryEntry(timestamp: e.timestamp, entry: e, type: 'eating'),
+      ),
+      ...shopping.map(
+        (e) => UnifiedDiaryEntry(
+            timestamp: e.timestamp, entry: e, type: 'shopping'),
       ),
     ];
 
@@ -89,7 +98,7 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
         appBar: AppBar(
           title: Text(
             'Carbon Diary Log',
-            style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+            style: TextStyle(fontWeight: FontWeight.bold),
           ),
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -134,13 +143,15 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
                       ? Center(child: Text("No entries for selected date"))
                       : ListView(
                         children: [
-                          _buildDailySummary(_getFilteredLogsForSelectedDay()),
+                          // _buildDailySummary(_getFilteredLogsForSelectedDay()),
                           ..._getFilteredLogsForSelectedDay().map((log) {
                             return log.type == 'waste'
                                 ? _buildWasteCard(log.entry as WasteDiaryEntry)
-                                : _buildTravelCard(
-                                  log.entry as TravelDiaryEntry,
-                                );
+                                : log.type == 'travel'
+                                ? _buildTravelCard(log.entry as TravelDiaryEntry)
+                                : log.type == 'shopping'
+                                ? _buildShoppingCard(log.entry as ShoppingDiaryEntry)
+                                : _buildEatingCard(log.entry as EatingDiaryEntry);
                           }).toList(),
                         ],
                       ),
@@ -150,6 +161,62 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
       ),
     );
   }
+
+  Widget _buildShoppingCard(ShoppingDiaryEntry log) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+    child: Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.blueGrey.shade100),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Card(
+        color: Color(0xFFFFF3E0),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        elevation: 2,
+        margin: EdgeInsets.zero,
+        child: ListTile(
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          leading: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            padding: EdgeInsets.all(10),
+            child: Icon(
+              Icons.shopping_bag,
+              color: Colors.orange,
+              size: 26,
+            ),
+          ),
+          title: Text(
+            log.name,
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Category: ${log.category}',
+                style: TextStyle(fontSize: 12),
+              ),
+              Text(
+                'Carbon: ${log.carbon.toStringAsFixed(4)} kgCO₂',
+                style: TextStyle(fontSize: 12),
+              ),
+              Text(
+                DateFormat.Hm().format(log.timestamp),
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
 
   Widget _buildWasteCard(WasteDiaryEntry log) {
     return Padding(
@@ -218,9 +285,66 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
               children: [
                 if (log.quantity != null)
                   Text('Qty: ${log.quantity}', style: TextStyle(fontSize: 12)),
-                  Text('Carbon: ${log.carbon}', style: TextStyle(fontSize: 12)),
+                  Text('Carbon: ${log.carbon.toStringAsFixed(4)} kgCO₂', style: TextStyle(fontSize: 12)),
                 if (log.note != null && log.note!.isNotEmpty)
                   Text('Note: ${log.note}', style: TextStyle(fontSize: 12)),
+                Text(
+                  DateFormat.Hm().format(log.timestamp),
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEatingCard(EatingDiaryEntry log) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.blueGrey.shade100),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Card(
+          color: Color.fromARGB(255, 222, 219, 206),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: 2,
+          margin: EdgeInsets.zero, 
+          child: ListTile(
+            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            leading: Container(
+              decoration: BoxDecoration(
+                color: Colors.white, 
+                shape: BoxShape.circle,
+              ),
+              padding: EdgeInsets.all(10),
+              child: Icon(
+                Icons.restaurant_menu,
+                color: Color.fromARGB(255, 110, 97, 39),
+                size: 26,
+              ),
+            ),
+            title: Text(
+              '${log.name} ${log.variant != null ? '(${log.variant})' : ''}',
+              maxLines: 1,
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Qty: ${log.quantity}',
+                  style: TextStyle(fontSize: 12),
+                ),
+                Text(
+                  'Carbon: ${log.carbon.toStringAsFixed(4)} kgCO₂',
+                  style: TextStyle(fontSize: 12),
+                ),
                 Text(
                   DateFormat.Hm().format(log.timestamp),
                   style: TextStyle(fontSize: 12, color: Colors.grey[600]),
@@ -286,49 +410,60 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
     );
   }
 
-  Widget _buildDailySummary(List<UnifiedDiaryEntry> logs) {
-    int wasteCount = 0; // quantity
-    int travelCount = 0; // log
-    double totalTravelCarbon = 0.0;
-    double totalWasteCarbon = 0.0;
+  // Widget _buildDailySummary(List<UnifiedDiaryEntry> logs) {
+  //   int wasteCount = 0; // quantity
+  //   int travelCount = 0; // log
+  //   int eatingCount = 0; // log
+  //   int shoppingCount = 0; // log
+  //   double totalTravelCarbon = 0.0;
+  //   double totalWasteCarbon = 0.0;
+  //   double totalEatingCarbon = 0.0;
+  //   double totalShoppingCarbon = 0.0;
 
-    for (var log in logs) {
-      if (log.type == 'waste') {
-        final wasteEntry = log.entry as WasteDiaryEntry;
-        wasteCount += wasteEntry.quantity;
-        totalWasteCarbon += wasteEntry.carbon;
-      } else if (log.type == 'travel') {
-        travelCount++;
-        final travelEntry = log.entry as TravelDiaryEntry;
-        totalTravelCarbon += travelEntry.carbon;
-      }
-    }
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Card(
-        color: const Color.fromARGB(255, 255, 250, 225),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        elevation: 2,
-        margin: EdgeInsets.zero,
-        child: Padding(
-          padding: const EdgeInsets.all(14.0),
-          child: Row(
-            children: [
-              Icon(Icons.summarize, size: 18, color: Colors.blueGrey),
-              SizedBox(width: 12),
-              Text(
-                '♻️ $wasteCount  💨 ${totalWasteCarbon.toStringAsFixed(4)} kgCO₂  ||  🚗 $travelCount  💨 ${totalTravelCarbon.toStringAsFixed(2)} kgCO₂',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  //   for (var log in logs) {
+  //     if (log.type == 'waste') {
+  //       final wasteEntry = log.entry as WasteDiaryEntry;
+  //       wasteCount += wasteEntry.quantity;
+  //       totalWasteCarbon += wasteEntry.carbon;
+  //     } else if (log.type == 'travel') {
+  //       travelCount++;
+  //       final travelEntry = log.entry as TravelDiaryEntry;
+  //       totalTravelCarbon += travelEntry.carbon;
+  //     } else if (log.type == 'eating') {
+  //       eatingCount++;
+  //       final eatingEntry = log.entry as EatingDiaryEntry;
+  //       totalEatingCarbon += eatingEntry.carbon;
+  //     } else if (log.type == 'shopping') {
+  //       final shoppingEntry = log.entry as ShoppingDiaryEntry;
+  //       totalShoppingCarbon += shoppingEntry.carbon;
+  //     }
+  //   }
+  //   return Container(
+  //     margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+  //     decoration: BoxDecoration(
+  //       borderRadius: BorderRadius.circular(14),
+  //     ),
+  //     child: Card(
+  //       color: const Color.fromARGB(255, 255, 250, 225),
+  //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+  //       elevation: 2,
+  //       margin: EdgeInsets.zero,
+  //       child: Padding(
+  //         padding: const EdgeInsets.all(14.0),
+  //         child: Row(
+  //           children: [
+  //             Icon(Icons.summarize, size: 18, color: Colors.blueGrey),
+  //             SizedBox(width: 12),
+  //             Text(
+  //               '♻️ $wasteCount  💨 ${totalWasteCarbon.toStringAsFixed(4)} kgCO₂  ||  🚗 $travelCount  💨 ${totalTravelCarbon.toStringAsFixed(2)} kgCO₂',
+  //               style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+  //             ),
+  //           ],
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Widget _buildFilterChips() {
     return Padding(
@@ -337,8 +472,10 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
         spacing: 10,
         children: [
           _buildChip("All", 'all'),
+          _buildChip("Eating", 'eating'),
           _buildChip("Waste", 'waste'),
           _buildChip("Travel", 'travel'),
+          _buildChip("Shopping", 'shopping'),
         ],
       ),
     );
@@ -346,7 +483,7 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
 
   Widget _buildChip(String label, String value) {
     return ChoiceChip(
-      label: Text(label, style: GoogleFonts.poppins(fontSize: 13)),
+      label: Text(label, style: TextStyle(fontSize: 13)),
       selected: _filter == value,
       selectedColor: Color.fromARGB(255, 72, 130, 96),
       backgroundColor: Colors.grey.shade100,
@@ -394,7 +531,7 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
           outsideDaysVisible: false,
         ),
         headerStyle: HeaderStyle(
-          titleTextStyle: GoogleFonts.poppins(
+          titleTextStyle: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),

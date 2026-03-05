@@ -43,19 +43,9 @@ class WasteItem {
       category: map['category'],
       subcategory: map['subcategory'],
       tip: map['tip'],
-      iconPath: map['iconPath'] ?? '', 
-      // ef: map['ef'], 
-      // unit: map['unit'], 
+      iconPath: map['iconPath'] ?? '',
       ef: double.tryParse(map['ef'].toString()) ?? 0.0,
       unit: double.tryParse(map['unit'].toString()) ?? 0.0,
     );
   }
-
-  // double emissionsTonForQuantity(double quantity) {
-  //   return emissionFactor * quantity;
-  // }
-
-  // double emissionFactorKgPerUnit() {
-  //   return emissionFactor / 1000.0;
-  // }
 }

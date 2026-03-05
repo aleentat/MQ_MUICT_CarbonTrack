@@ -32,13 +32,21 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/icon.png"
 
 flutter:
   uses-material-design: true
   assets:
-    - assets/lottie/
+    # - assets/lottie/
     - assets/gif/
     - assets/images/
     - assets/images/symbols/
     - assets/images/examples/
+    - assets/images/foods/
+    - assets/images/trees/
     - .env

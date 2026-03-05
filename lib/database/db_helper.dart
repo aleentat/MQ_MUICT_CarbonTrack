@@ -3,9 +3,13 @@ import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import '../models/waste_item.dart';
 import '../models/waste_diary_entry.dart';
 import '../models/travel_diary_entry.dart';
+import '../models/eating_diary_entry.dart';
+import '../models/shopping_diary_entry.dart';
+import 'dart:math';
 
 class DBHelper {
   DBHelper._privateConstructor();  
@@ -56,16 +60,17 @@ class DBHelper {
   }
 
   Future<void> _createDB(Database db, int version) async {
+    debugPrint('🔥🔥🔥🔥🔥🔥🔥🔥🔥 onCreate CALLED 🔥🔥🔥🔥🔥🔥🔥🔥🔥');
     await db.execute('''
       CREATE TABLE waste_items (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         type TEXT NOT NULL,
-        category TEXT NOT NULL,
+        category TEXT NOT NULL DEFAULT 'Other',
         subcategory TEXT NOT NULL,
         tip TEXT NOT NULL,
-        ef DOUBLE,
-        unit DOUBLE
+        ef REAL NOT NULL DEFAULT 0,
+        unit REAL NOT NULL DEFAULT 0
       )
     ''');
 
@@ -75,10 +80,10 @@ class DBHelper {
         name TEXT NOT NULL,
         type TEXT NOT NULL,
         timestamp TEXT NOT NULL,
-        quantity INTEGER NOT NULL,
+        quantity INTEGER DEFAULT 1,
         note TEXT,
         imagePath TEXT,
-        carbon DOUBLE,
+        carbon REAL DEFAULT 0.0,
         unit DOUBLE
       )
     ''');
@@ -94,6 +99,159 @@ class DBHelper {
         timestamp TEXT
       )
     ''');
+
+    await db.execute('''
+      CREATE TABLE food_emission_factor (
+       id INTEGER PRIMARY KEY AUTOINCREMENT,
+        food_name TEXT NOT NULL,
+        variant TEXT,
+        carbon REAL NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE eating_diary (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        variant TEXT,
+        quantity INTEGER DEFAULT 1,
+        carbon REAL,
+        timestamp TEXT,
+        note TEXT
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE shopping_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        category TEXT NOT NULL,
+        name TEXT NOT NULL,
+        emission_factor REAL NOT NULL
+      )
+      ''');
+
+    await db.execute('''
+      CREATE TABLE shopping_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        category TEXT NOT NULL,
+        timestamp TEXT NOT NULL,
+        quantity INTEGER NOT NULL,
+        note TEXT,
+        carbon REAL NOT NULL,
+        unit REAL NOT NULL
+      )
+      ''');
+
+    await db.execute('''
+      CREATE TABLE user_profile (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT,
+        age INTEGER,
+        created_at TEXT
+    )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE app_usage (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date TEXT,
+        count INTEGER
+      )
+      ''');
+
+    // ---------- Shopping emission factors ----------
+    await db.insert('shopping_items', {'category':'Clothing','name':'Shirt / Top','emission_factor':4.46200});
+    await db.insert('shopping_items', {'category':'Clothing','name':'Pants / Jeans','emission_factor':13.38600});
+    await db.insert('shopping_items', {'category':'Clothing','name':'Shorts','emission_factor':6.69300});
+    await db.insert('shopping_items', {'category':'Clothing','name':'Skirt','emission_factor':5.57750});
+    await db.insert('shopping_items', {'category':'Clothing','name':'Dress','emission_factor':6.69300});
+    await db.insert('shopping_items', {'category':'Clothing','name':'Jacket','emission_factor':13.38600});
+    await db.insert('shopping_items', {'category':'Clothing','name':'Sweater / Hoodie','emission_factor':7.80850});
+    await db.insert('shopping_items', {'category':'Clothing','name':'Bra','emission_factor':1.11550});
+    await db.insert('shopping_items', {'category':'Clothing','name':'Underwear','emission_factor':1.11550});
+    await db.insert('shopping_items', {'category':'Clothing','name':'Socks','emission_factor':1.33860});
+    await db.insert('shopping_items', {'category':'Clothing','name':'Hat','emission_factor':2.23100});
+    await db.insert('shopping_items', {'category':'Clothing','name':'Scarf','emission_factor':3.34650});
+    await db.insert('shopping_items', {'category':'Clothing','name':'Shoes','emission_factor':15.61700});
+    await db.insert('shopping_items', {'category':'Clothing','name':'Handbag','emission_factor':13.38600});
+    await db.insert('shopping_items', {'category':'Clothing','name':'Backpack','emission_factor':22.31000});
+    await db.insert('shopping_items', {'category':'Clothing','name':'Wallet','emission_factor':4.46200});
+
+    await db.insert('shopping_items', {'category':'Electronics','name':'Smartphone','emission_factor':12.43274});
+    await db.insert('shopping_items', {'category':'Electronics','name':'Laptop','emission_factor':74.59644});
+    await db.insert('shopping_items', {'category':'Electronics','name':'Tablet','emission_factor':22.37893});
+    await db.insert('shopping_items', {'category':'Electronics','name':'Desktop computer','emission_factor':248.65480});
+    await db.insert('shopping_items', {'category':'Electronics','name':'Large electrical appliances','emission_factor':32.67000});
+    await db.insert('shopping_items', {'category':'Electronics','name':'Small electrical appliances','emission_factor':11.29590});
+    await db.insert('shopping_items', {'category':'Electronics','name':'Fridge / Freezer','emission_factor':222.52983});
+
+
+    // ---------- Food emission factors ----------
+    await db.insert('food_emission_factor', {'food_name':'Burger','variant':'Beef','carbon':5.140434});
+    await db.insert('food_emission_factor', {'food_name':'Burger','variant':'Pork','carbon':1.448394});
+    await db.insert('food_emission_factor', {'food_name':'Burger','variant':'Chicken','carbon':1.106794});
+    await db.insert('food_emission_factor', {'food_name':'Burger','variant':'Fish','carbon':0.693594});
+
+    await db.insert('food_emission_factor', {'food_name':'Pad Krapow','variant':'Beef','carbon':5.19395008});
+    await db.insert('food_emission_factor', {'food_name':'Pad Krapow','variant':'Pork','carbon':1.50191008});
+    await db.insert('food_emission_factor', {'food_name':'Pad Krapow','variant':'Chicken','carbon':1.16031008});
+    await db.insert('food_emission_factor', {'food_name':'Pad Krapow','variant':'Fish','carbon':0.74711008});
+
+    await db.insert('food_emission_factor', {'food_name':'Salad','variant':null,'carbon':0.3040376});
+
+    await db.insert('food_emission_factor', {'food_name':'Spaghetti','variant':'Beef','carbon':7.80368735});
+    await db.insert('food_emission_factor', {'food_name':'Spaghetti','variant':'Pork','carbon':2.26562735});
+    await db.insert('food_emission_factor', {'food_name':'Spaghetti','variant':'Chicken','carbon':1.75322735});
+    await db.insert('food_emission_factor', {'food_name':'Spaghetti','variant':'Fish','carbon':1.13342735});
+
+    await db.insert('food_emission_factor', {'food_name':'Steak','variant':'Beef','carbon':7.812772553});
+    await db.insert('food_emission_factor', {'food_name':'Steak','variant':'Pork','carbon':2.274712553});
+    await db.insert('food_emission_factor', {'food_name':'Steak','variant':'Chicken','carbon':1.762312553});
+    await db.insert('food_emission_factor', {'food_name':'Steak','variant':'Fish','carbon':1.142512553});
+
+    await db.insert('food_emission_factor', {'food_name':'Fried Rice','variant':'Beef','carbon':2.76265717});
+    await db.insert('food_emission_factor', {'food_name':'Fried Rice','variant':'Pork','carbon':0.91663717});
+    await db.insert('food_emission_factor', {'food_name':'Fried Rice','variant':'Chicken','carbon':0.74583717});
+    await db.insert('food_emission_factor', {'food_name':'Fried Rice','variant':'Fish','carbon':0.53923717});
+
+    await db.insert('food_emission_factor', {'food_name':'Massaman','variant':'Beef','carbon':4.760471198});
+    await db.insert('food_emission_factor', {'food_name':'Massaman','variant':'Pork','carbon':1.771342358});
+    await db.insert('food_emission_factor', {'food_name':'Massaman','variant':'Chicken','carbon':1.429742358});
+    await db.insert('food_emission_factor', {'food_name':'Massaman','variant':'Fish','carbon':1.016542358});
+
+    await db.insert('food_emission_factor', {'food_name':'Tom Yum Goong','variant':'Shrimp','carbon':1.68309});
+
+    await db.insert('food_emission_factor', {'food_name':'Green Curry','variant':'Beef','carbon':4.265988956});
+    await db.insert('food_emission_factor', {'food_name':'Green Curry','variant':'Pork','carbon':1.575773});
+    await db.insert('food_emission_factor', {'food_name':'Green Curry','variant':'Chicken','carbon':1.268333});
+    await db.insert('food_emission_factor', {'food_name':'Green Curry','variant':'Fish','carbon':0.896453});
+
+    await db.insert('food_emission_factor', {'food_name':'Tom Kha Gai','variant':'Chicken','carbon':1.022025});
+
+    await db.insert('food_emission_factor', {'food_name':'Khao Man Gai','variant':'Chicken','carbon':1.21121});
+
+    await db.insert('food_emission_factor', {'food_name':'Khao Moo Daeng','variant':'Pork','carbon':1.55281});
+
+    await db.insert('food_emission_factor', {'food_name':'Boat Noodles','variant':'Beef','carbon':3.778726256});
+    await db.insert('food_emission_factor', {'food_name':'Boat Noodles','variant':'Pork','carbon':1.536879626});
+
+    await db.insert('food_emission_factor', {'food_name':'Pad See Ew','variant':'Beef','carbon':4.961763663});
+    await db.insert('food_emission_factor', {'food_name':'Pad See Ew','variant':'Pork','carbon':1.762904633});
+
+    await db.insert('food_emission_factor', {'food_name':'Pad Kee Mao','variant':'Beef','carbon':3.896673663});
+    await db.insert('food_emission_factor', {'food_name':'Pad Kee Mao','variant':'Pork','carbon':1.654827033});
+    await db.insert('food_emission_factor', {'food_name':'Pad Kee Mao','variant':'Chicken','carbon':1.398627033});
+    await db.insert('food_emission_factor', {'food_name':'Pad Kee Mao','variant':'Fish','carbon':1.088727033});
+
+    await db.insert('food_emission_factor', {'food_name':'Larb','variant':'Beef','carbon':3.39539663});
+    await db.insert('food_emission_factor', {'food_name':'Larb','variant':'Pork','carbon':1.15355});
+    await db.insert('food_emission_factor', {'food_name':'Larb','variant':'Chicken','carbon':0.89735});
+    await db.insert('food_emission_factor', {'food_name':'Larb','variant':'Fish','carbon':0.58745});
+
+    await db.insert('food_emission_factor', {'food_name':'Omelette Rice','variant':'Egg','carbon':0.1965376});
+
+
     // Plastic unit is weight in kilogram
     await db.insert('waste_items', {'name': 'Plastic bottle', 'category': 'Plastic', 'subcategory': 'Bottle', 'type': 'Recyclable', 'tip': 'Remove cap and rinse before recycling.', 'ef': 4.68568, 'unit': 0.025});
     await db.insert('waste_items', {'name': 'Plastic bag', 'category': 'Plastic', 'subcategory': 'Bag', 'type': 'Trash', 'tip': 'Try to reuse before disposal.', 'ef': 8.98311, 'unit': 0.006});
@@ -166,57 +324,11 @@ class DBHelper {
     await db.insert('waste_items', {'name': 'Toxic/Poisonous', 'category': 'Symbol Guide', 'subcategory': 'Non-Recyclable', 'type': 'toxic.png', 'tip': 'Do not dispose in drains or bins. Take to a toxic waste facility or special collection point.'});
   }
 
-static const int _dbVersion = 6;
+static const int _dbVersion = 1;
 
 Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // v2: add carbon column
-    if (oldVersion < 2) {
-      await db.execute(
-        'ALTER TABLE waste_diary_log ADD COLUMN carbon REAL DEFAULT 0.0',
-      );
-    }
-
-    // v3: add category to waste_items
-    if (oldVersion < 3) {
-      await db.execute('ALTER TABLE waste_items ADD COLUMN category TEXT');
-      await db.rawUpdate(
-        'UPDATE waste_items SET category = "Other" WHERE category IS NULL',
-      );
-    }
-
-    // v4: add missing diary fields (only if they did not exist before)
-    if (oldVersion < 4) {
-      await db.execute(
-        'ALTER TABLE waste_diary_log ADD COLUMN quantity INTEGER DEFAULT 1',
-      );
-      await db.execute('ALTER TABLE waste_diary_log ADD COLUMN note TEXT');
-      await db.execute('ALTER TABLE waste_diary_log ADD COLUMN imagePath TEXT');
-    }
-
-    // v5: travel diary table
-    if (oldVersion < 5) {
-      await db.execute('''
-      CREATE TABLE IF NOT EXISTS travel_diary (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        startLocation TEXT,
-        endLocation TEXT,
-        mode TEXT,
-        distance REAL,
-        carbon REAL,
-        timestamp TEXT
-      )
-    ''');
-    }
-
-    if (oldVersion < 6) {
-  await db.execute('''
-    UPDATE waste_items
-    SET ef = CAST(ef AS REAL),
-        unit = CAST(unit AS REAL)
-    WHERE ef IS NULL OR unit IS NULL
-  ''');
-}
-
+    debugPrint('🔄🔄🔄 onUpgrade CALLED from $oldVersion to $newVersion 🔄🔄🔄');
+    // Handle database upgrades here if needed in future versions
   }
 
   // --------------------------- Waste Items ---------------------------
@@ -325,4 +437,185 @@ Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     final db = await database;
     db.close();
   }
+
+  // --------------------------- Eating Diary ---------------------------
+
+  Future<List<EatingDiaryEntry>> getAllEatingDiaryEntries() async {
+    final db = await database;
+    final maps = await db.query('eating_diary',
+    orderBy: 'timestamp DESC');
+    return List.generate(maps.length, (i) => EatingDiaryEntry.fromMap(maps[i]));
+  }
+
+Future<int> insertEatingDiaryEntry(EatingDiaryEntry entry) async {
+  final db = await database;
+  print(
+    "Saving eating diary: ${entry.name} (${entry.variant}) - ${entry.carbon}",
+  );
+
+  return await db.insert(
+    'eating_diary',
+    entry.toMap(),
+    conflictAlgorithm: ConflictAlgorithm.replace,
+  );
+}
+
+Future<double> getFoodCarbon(String food, String? variant) async {
+  final db = await database;
+
+  // Normalize input
+  final foodKey = food.trim();
+  final variantKey = variant?.trim();
+
+  List<Map<String, dynamic>> result;
+
+  if (variantKey == null || variantKey.isEmpty) {
+    // For foods like Salad
+    result = await db.query(
+      'food_emission_factor',
+      where: 'food_name = ? AND variant IS NULL',
+      whereArgs: [foodKey],
+    );
+  } else {
+    result = await db.query(
+      'food_emission_factor',
+      where: 'food_name = ? AND variant = ?',
+      whereArgs: [foodKey, variantKey],
+    );
+  }
+
+  if (result.isEmpty) {
+    debugPrint('[DB] ❌ No match for food=$foodKey variant=$variantKey');
+    return 0.0;
+  }
+
+  final carbon = (result.first['carbon'] as num).toDouble();
+
+  debugPrint(
+    '[DB] ✅ Match food=$foodKey variant=$variantKey carbon=$carbon',
+  );
+
+  return carbon;
+}
+Future<List<String>> getFoodVariants(String food) async {
+  final db = await database;
+
+  final result = await db.query(
+    'food_emission_factor',
+    columns: ['variant'],
+    where: 'food_name = ? AND variant IS NOT NULL',
+    whereArgs: [food],
+    distinct: true,
+  );
+
+  return result
+      .map((row) => row['variant'] as String)
+      .toList();
+}
+
+// --------------------------- Shopping Diary ---------------------------
+Future<List<Map<String, dynamic>>> getShoppingItems(String category) async {
+  final db = await database;
+  return await db.query(
+    'shopping_items',
+    where: 'category = ?',
+    whereArgs: [category],
+  );
+}
+
+Future<void> insertShoppingLog(ShoppingDiaryEntry entry) async {
+  final db = await database;
+  await db.insert('shopping_logs', entry.toMap());
+}
+
+Future<List<ShoppingDiaryEntry>> getAllShoppingDiaryEntries() async {
+  final db = await database;
+  final maps = await db.query('shopping_logs');
+
+  return List.generate(maps.length, (i) {
+    return ShoppingDiaryEntry.fromMap(maps[i]);
+  });
+}
+
+
+
+// User Profile table
+Future<void> saveUserProfile(String username, int age) async {
+  final db = await database;
+
+  await db.delete('user_profile'); // keep only ONE user
+
+  await db.insert(
+    'user_profile',
+    {
+      'username': username,
+      'age': age,
+      'created_at': DateTime.now().toIso8601String(),
+    },
+  );
+}
+
+Future<Map<String, dynamic>?> getUserProfile() async {
+  final db = await database;
+  final result = await db.query('user_profile', limit: 1);
+  return result.isNotEmpty ? result.first : null;
+}
+
+Future<String> getOrCreateUsername() async {
+  final user = await getUserProfile();
+
+  if (user != null && user['username'] != null) {
+    return user['username'];
+  }
+
+  final randomUsername = generateRandomUsername();
+  await saveUserProfile(randomUsername, 0); // age default
+
+  return randomUsername;
+}
+String generateRandomUsername() {
+  const animals = ['Fox', 'Tree', 'Leaf', 'Panda', 'Otter', 'Bee'];
+  final random = Random();
+  return '${animals[random.nextInt(animals.length)]}_${random.nextInt(999)}';
+}
+// Count app launches
+Future<void> incrementAppOpen() async {
+  final db = await database;
+  final today = DateTime.now().toIso8601String().split('T').first;
+
+  final result = await db.query(
+    'app_usage',
+    where: 'date = ?',
+    whereArgs: [today],
+  );
+
+  if (result.isEmpty) {
+    await db.insert('app_usage', {
+      'date': today,
+      'count': 1,
+    });
+  } else {
+    await db.update(
+      'app_usage',
+      {'count': (result.first['count'] as int) + 1},
+      where: 'date = ?',
+      whereArgs: [today],
+    );
+  }
+}
+Future<int> getTodayAppOpenCount() async {
+  final db = await database;
+  final today = DateTime.now().toIso8601String().split('T').first;
+
+  final result = await db.query(
+    'app_usage',
+    where: 'date = ?',
+    whereArgs: [today],
+  );
+
+  if (result.isEmpty) return 0;
+  return result.first['count'] as int;
+}
+
+
 }
