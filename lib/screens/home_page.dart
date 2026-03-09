@@ -10,7 +10,9 @@ import 'gamification_page.dart';
 import '../widgets/home_tree_widget.dart';
 import '../models/weekly_eco_state.dart';
 import '../utils/eco_score_calculator.dart';
-import 'user_profile_page.dart'; 
+import 'user_profile_page.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -20,12 +22,142 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
   int _weeklyEcoScore = 0;
+  final GlobalKey<ActivityPageController> activityPageKey = GlobalKey();
+  final GlobalKey<CarbonDiaryPageController> diaryPageKey = GlobalKey();
+  final GlobalKey<StatisticPageController> statsPageKey = GlobalKey();
 
+  GlobalKey forestButtonKey = GlobalKey();
+  GlobalKey activityButtonKey = GlobalKey();
+  GlobalKey diaryButtonKey = GlobalKey();
+  GlobalKey statsButtonKey = GlobalKey();
+  GlobalKey profileButtonKey = GlobalKey();
+  GlobalKey refreshButtonKey = GlobalKey();
+
+  late TutorialCoachMark tutorialCoachMark;
+  List<TargetFocus> targets = [];
+
+  void initTutorial() {
+    targets = [
+
+      TargetFocus(
+        identify: "Profile",
+        keyTarget: profileButtonKey,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            child: Text(
+              "Tap here to view or edit your profile.",
+              style: TextStyle(color: Colors.white, fontSize: 16),
+            ),
+          ),
+        ],
+      ),
+
+      TargetFocus(
+        identify: "Refresh",
+        keyTarget: refreshButtonKey,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            child: Text(
+              "Refresh your latest eco score data.",
+              style: TextStyle(color: Colors.white, fontSize: 16),
+            ),
+          ),
+        ],
+      ),
+
+      TargetFocus(
+        identify: "Forest",
+        keyTarget: forestButtonKey,
+        shape: ShapeLightFocus.RRect,
+        radius: 8, 
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+              child: Text(
+                "Visit your forest to see how your eco score grows your trees!",
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
+          ),
+        ],
+      ),
+
+      TargetFocus(
+        identify: "Activity",
+        keyTarget: activityButtonKey,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            child: Text(
+              "Add daily your activities here.",
+              style: TextStyle(color: Colors.white, fontSize: 16),
+            ),
+          ),
+        ],
+      ),
+
+      TargetFocus(
+        identify: "Diary",
+        keyTarget: diaryButtonKey,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            child: Text(
+              "View your activities in the diary.",
+              style: TextStyle(color: Colors.white, fontSize: 16),
+            ),
+          ),
+        ],
+      ),
+
+      TargetFocus(
+        identify: "Stats",
+        keyTarget: statsButtonKey,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            child: Text(
+              "View charts and track your carbon progress.",
+              style: TextStyle(color: Colors.white, fontSize: 16),
+            ),
+          ),
+        ],
+      ),
+
+    ];
+  }
+
+  void showTutorial() {
+  tutorialCoachMark = TutorialCoachMark(
+    targets: targets,
+    colorShadow: Colors.black,
+    textSkip: "SKIP",
+    opacityShadow: 0.8,
+  );
+
+  tutorialCoachMark.show(context: context);
+}
+
+ Future<void> _checkTutorial() async {
+  final prefs = await SharedPreferences.getInstance();
+  bool seenTutorial = prefs.getBool('seenTutorial') ?? false;
+
+  if (!seenTutorial) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      initTutorial();
+      showTutorial();
+    });
+
+    await prefs.setBool('seenTutorial', true);
+  }
+}
 
   @override
   void initState() {
     super.initState();
     _loadData();
+    _checkTutorial();
   }
 
   List<int> _monthlyWeeklyScores = [0, 0, 0, 0];
@@ -192,7 +324,24 @@ Future<int> _calculateWeeklyEcoScore() async {
     setState(() {
       _selectedIndex = index;
     });
+
+    if (index == 1) {
+    Future.delayed(Duration(milliseconds: 300), () {
+      activityPageKey.currentState?.checkActivityTutorial();
+    });
+}
+    if (index == 2) {
+    Future.delayed(Duration(milliseconds: 300), () {
+      diaryPageKey.currentState?.checkDiaryTutorial();
+      diaryPageKey.currentState?.refresh();
+    });
   }
+    if (index == 3) {
+    Future.delayed(Duration(milliseconds: 300), () {
+      statsPageKey.currentState?.checkStatisticTutorial();
+    });
+  }
+}
 
   final List<Map<String, String>> mockNews = [
     {
@@ -260,22 +409,39 @@ Future<int> _calculateWeeklyEcoScore() async {
           backgroundColor: Colors.transparent,
           elevation: 0,
           actions: [
-            IconButton(icon: const Icon(Icons.person), onPressed: () {Navigator.push(context, MaterialPageRoute(builder: (_) => const UserProfilePage(),),);},),
-            IconButton(icon: Icon(Icons.refresh), onPressed: _loadData),
+            IconButton(key: profileButtonKey,icon: const Icon(Icons.person), onPressed: () {Navigator.push(context, MaterialPageRoute(builder: (_) => const UserProfilePage(),),);},),
+            IconButton(
+              icon: Icon(Icons.info_outline),
+              onPressed: () {
+                switch (_selectedIndex) {
+                  case 0:
+                    initTutorial();
+                    showTutorial();
+                    break;
+
+                  case 1:
+                    activityPageKey.currentState?.showTutorial();
+                    break;
+                  case 2:
+                    diaryPageKey.currentState?.showTutorial();
+                    break;
+                  case 3:
+                    statsPageKey.currentState?.showTutorial();
+                    break;
+                }
+              },
+            ),
+            IconButton(key: refreshButtonKey,icon: Icon(Icons.refresh), onPressed: _loadData),
           ],
         ),
-        body: AnimatedSwitcher(
-          duration: Duration(milliseconds: 300),
-          child: IndexedStack(
-            key: ValueKey<int>(_selectedIndex),
-            index: _selectedIndex,
-            children: [
-              _buildHomeContent(),
-              ActivityPage(),
-              CarbonDiaryPage(),
-              StatisticPage(),
-            ],
-          ),
+        body: IndexedStack(
+          index: _selectedIndex,
+          children: [
+            _buildHomeContent(),
+            ActivityPage(key: activityPageKey),
+            CarbonDiaryPage(key: diaryPageKey),
+            StatisticPage(key: statsPageKey),
+          ],
         ),
         bottomNavigationBar: _buildBottomNavBar(),
       ),
@@ -420,6 +586,7 @@ Future<int> _calculateWeeklyEcoScore() async {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
+              key: forestButtonKey,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color.fromARGB(255, 96, 176, 158),
                 shape: RoundedRectangleBorder(
@@ -664,10 +831,28 @@ Future<int> _calculateWeeklyEcoScore() async {
       activeColor: Color.fromARGB(255, 96, 176, 158),
       color: Colors.grey[600],
       items: [
-        TabItem(icon: Icons.home, title: 'Home'),
-        TabItem(icon: Icons.local_activity, title: 'Activity'),
-        TabItem(icon: Icons.book, title: 'Diary'),
-        TabItem(icon: Icons.bar_chart, title: 'Stats'),
+        TabItem(icon: Icon(Icons.home), title: 'Home'),
+        TabItem(
+          icon: Container(
+            key: activityButtonKey,
+            child: Icon(Icons.local_activity),
+          ),
+          title: 'Activity',
+        ),
+        TabItem(
+          icon: Container(
+            key: diaryButtonKey,
+            child: Icon(Icons.book),
+          ),
+          title: 'Diary',
+        ),
+        TabItem(
+          icon: Container(
+            key: statsButtonKey,
+            child: Icon(Icons.bar_chart),
+          ),
+          title: 'Stats',
+        ),
       ],
       initialActiveIndex: _selectedIndex,
       onTap: _onItemTapped,

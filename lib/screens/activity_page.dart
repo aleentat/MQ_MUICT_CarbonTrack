@@ -4,13 +4,129 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'travel_carbon_calculator.dart';
 import 'waste_sorting_guide.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class ActivityPage extends StatefulWidget {
-  @override
-  _ActivityPageState createState() => _ActivityPageState();
+abstract class ActivityPageController extends State<ActivityPage> {
+  void showTutorial();
+  void checkActivityTutorial();
 }
 
-class _ActivityPageState extends State<ActivityPage> {
+class ActivityPage extends StatefulWidget {
+  const ActivityPage({super.key});
+
+  @override
+  ActivityPageController createState() => _ActivityPageState();
+}
+
+class _ActivityPageState extends ActivityPageController {
+
+  GlobalKey travelKey = GlobalKey();
+  GlobalKey wasteKey = GlobalKey();
+  GlobalKey shoppingKey = GlobalKey();
+  GlobalKey eatingKey = GlobalKey();
+
+  late TutorialCoachMark tutorialCoachMark;
+  List<TargetFocus> targets = [];
+
+  void initTutorial() {
+  targets = [
+
+    TargetFocus(
+      identify: "Travel",
+      keyTarget: travelKey,
+      shape: ShapeLightFocus.RRect,
+      radius: 18, 
+      contents: [
+        TargetContent(
+          align: ContentAlign.bottom,
+          child: Text(
+            "Log your transportation carbon footprint here.",
+            style: TextStyle(color: Colors.white, fontSize: 16),
+          ),
+        ),
+      ],
+    ),
+
+    TargetFocus(
+      identify: "Waste",
+      keyTarget: wasteKey,
+      shape: ShapeLightFocus.RRect,
+      radius: 18, 
+      contents: [
+        TargetContent(
+          align: ContentAlign.bottom,
+          child: Text(
+            "Learn how to sort waste and track its impact.",
+            style: TextStyle(color: Colors.white, fontSize: 16),
+          ),
+        ),
+      ],
+    ),
+
+    TargetFocus(
+      identify: "Shopping",
+      keyTarget: shoppingKey,
+      shape: ShapeLightFocus.RRect,
+      radius: 18, 
+      contents: [
+        TargetContent(
+          align: ContentAlign.bottom,
+          child: Text(
+            "Track the carbon footprint of your purchases.",
+            style: TextStyle(color: Colors.white, fontSize: 16),
+          ),
+        ),
+      ],
+    ),
+
+    TargetFocus(
+      identify: "Eating",
+      keyTarget: eatingKey,
+      shape: ShapeLightFocus.RRect,
+      radius: 18, 
+      contents: [
+        TargetContent(
+          align: ContentAlign.bottom,
+          child: Text(
+            "Estimate the carbon impact of your meals.",
+            style: TextStyle(color: Colors.white, fontSize: 16),
+          ),
+        ),
+      ],
+    ),
+
+  ];
+}
+
+  @override
+  void showTutorial() {
+  initTutorial();
+  tutorialCoachMark = TutorialCoachMark(
+    targets: targets,
+    textSkip: "SKIP",
+    opacityShadow: 0.8,
+  );
+
+  tutorialCoachMark.show(context: context);
+}
+  
+  @override
+  Future<void> checkActivityTutorial() async {
+  final prefs = await SharedPreferences.getInstance();
+  bool seen = prefs.getBool('seenActivityTutorial') ?? false;
+
+  if (!seen) {
+    showTutorial();
+    await prefs.setBool('seenActivityTutorial', true);
+  }
+}
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     final String today = DateFormat('EEEE, d MMMM y').format(DateTime.now());
@@ -92,6 +208,7 @@ class _ActivityPageState extends State<ActivityPage> {
               physics: NeverScrollableScrollPhysics(),
               children: [
                 _buildActivityButton(
+                  key: travelKey,
                   imagePath: 'assets/images/travel.png',
                   label: 'Travel',
                   onTap: () {
@@ -104,6 +221,7 @@ class _ActivityPageState extends State<ActivityPage> {
                   },
                 ),
                 _buildActivityButton(
+                  key: wasteKey,
                   imagePath: 'assets/images/waste.png',
                   label: 'Waste',
                   onTap: () {
@@ -114,6 +232,7 @@ class _ActivityPageState extends State<ActivityPage> {
                   },
                 ),
                 _buildActivityButton(
+                  key: shoppingKey,
                   imagePath: 'assets/images/shop.png',
                   label: 'Shopping',
                   onTap: () {
@@ -124,6 +243,7 @@ class _ActivityPageState extends State<ActivityPage> {
                   },
                 ),
                 _buildActivityButton(
+                  key: eatingKey,
                   imagePath: 'assets/images/eat.png',
                   label: 'Eating',
                   onTap: () {
@@ -142,11 +262,13 @@ class _ActivityPageState extends State<ActivityPage> {
   }
 
   Widget _buildActivityButton({
+    Key? key,
     required String imagePath,
     required String label,
     required VoidCallback onTap,
   }) {
     return InkWell(
+      key: key,
       borderRadius: BorderRadius.circular(20),
       onTap: onTap,
       child: Container(

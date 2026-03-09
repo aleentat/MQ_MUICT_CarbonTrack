@@ -3,19 +3,26 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../database/db_helper.dart';
 import 'dart:math';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 // import '../models/usage_summary.dart';
 // import '../services/api_service.dart';
 // import 'dart:convert';
 // import '../utils/eco_score_calculator.dart';
 
+abstract class StatisticPageController extends State<StatisticPage> {
+  void showTutorial();
+  void checkStatisticTutorial();
+}
+
 class StatisticPage extends StatefulWidget {
   const StatisticPage({super.key});
 
   @override
-  State<StatisticPage> createState() => _StatisticPageState();
+  StatisticPageController createState() => StatisticPageState();
 }
 
-class _StatisticPageState extends State<StatisticPage> {
+class StatisticPageState extends StatisticPageController {
   String _selectedDataType = 'Travel';
   String _selectedTimeframe = '1W';
   DateTime _currentViewDate = DateTime.now();
@@ -47,6 +54,69 @@ class _StatisticPageState extends State<StatisticPage> {
     if (hour < 20) return '15:00';
     return '20:00';
   }
+
+  GlobalKey activitySelectKey = GlobalKey();
+  GlobalKey timeframeSelectKey = GlobalKey();
+
+  late TutorialCoachMark _tutorialCoachMark;
+  List<TargetFocus> targets = [];
+
+  void initTutorial() {
+    targets = [
+      TargetFocus(
+        identify: "ActivityType",
+        keyTarget: activitySelectKey,
+        shape: ShapeLightFocus.RRect,
+        radius: 18, 
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            child: Text(
+              "Select the type of activity to view its carbon footprint trends.",
+              style: TextStyle(color: Colors.white, fontSize: 16),
+            ),
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: "Timeframe",
+        keyTarget: timeframeSelectKey,
+        shape: ShapeLightFocus.RRect,
+        radius: 18, 
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            child: Text(
+              "Choose the time range for the statistics displayed in the chart.",
+              style: TextStyle(color: Colors.white, fontSize: 16),
+            ),
+          ),
+        ],
+      ),
+    ];
+  }
+
+  void showTutorial() {
+  initTutorial();
+  _tutorialCoachMark = TutorialCoachMark(
+    targets: targets,
+    textSkip: "SKIP",
+    opacityShadow: 0.8,
+  );
+
+  _tutorialCoachMark.show(context: context);
+}
+  
+  Future<void> checkStatisticTutorial() async {
+  final prefs = await SharedPreferences.getInstance();
+  bool seen = prefs.getBool('seenStatisticTutorial') ?? false;
+
+  if (!seen) {
+    showTutorial();
+    await prefs.setBool('seenStatisticTutorial', true);
+  }
+}
+
 
   @override
   void initState() {
@@ -374,6 +444,7 @@ class _StatisticPageState extends State<StatisticPage> {
         child: ListView(
           children: [
             _buildSegmentSlider(
+              key: activitySelectKey,
               value: _selectedDataType,
               items: dataTypes,
               onChanged: (v) {
@@ -383,6 +454,7 @@ class _StatisticPageState extends State<StatisticPage> {
             ),
             const SizedBox(height: 10),
             _buildSegmentSlider(
+              key: timeframeSelectKey,
               value: _selectedTimeframe,
               items: timeframes,
               onChanged: (v) {
@@ -419,11 +491,13 @@ class _StatisticPageState extends State<StatisticPage> {
   }
 
   Widget _buildSegmentSlider({
+    Key? key,
     required String value,
     required List<String> items,
     required Function(String) onChanged,
   }) {
     return Container(
+      key: key,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: Colors.white,

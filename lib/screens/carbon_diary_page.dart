@@ -6,10 +6,20 @@ import '../models/eating_diary_entry.dart';
 import '../models/shopping_diary_entry.dart';
 import '../models/travel_diary_entry.dart';
 import '../models/waste_diary_entry.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+abstract class CarbonDiaryPageController extends State<CarbonDiaryPage> {
+  void showTutorial();
+  void checkDiaryTutorial();
+  Future<void> refresh();
+}
 
 class CarbonDiaryPage extends StatefulWidget {
+  const CarbonDiaryPage({super.key});
+
   @override
-  _CarbonDiaryPageState createState() => _CarbonDiaryPageState();
+  CarbonDiaryPageController createState() => _CarbonDiaryPageState();
 }
 
 enum DiaryViewMode { today, week, month }
@@ -40,7 +50,7 @@ class UnifiedDiaryEntry {
   });
 }
 
-class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
+class _CarbonDiaryPageState extends CarbonDiaryPageController {
   List<UnifiedDiaryEntry> _combinedEntries = [];
   DateTime _selectedDay = DateTime.now();
   DiaryViewMode _viewMode = DiaryViewMode.today;
@@ -65,6 +75,90 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
     'assets/images/stickers/catsticker7.png',
     'assets/images/stickers/catsticker8.png',
   ];
+
+  GlobalKey selectTimeKey = GlobalKey();
+  GlobalKey stickerKey = GlobalKey();
+  GlobalKey noteKey = GlobalKey();
+
+  late TutorialCoachMark _tutorialCoachMark;
+  List<TargetFocus> targets = [];
+
+  void initTutorial() {
+  targets = [
+    TargetFocus(
+      identify: "Select Time",
+      keyTarget: selectTimeKey,
+      shape: ShapeLightFocus.RRect,
+      radius: 18, 
+      contents: [
+        TargetContent(
+          align: ContentAlign.bottom,
+          child: Text(
+            "Tap here to select the time range for your diary entries.",
+            style: TextStyle(color: Colors.white, fontSize: 16),
+          ),
+        ),
+      ],
+    ),
+
+    TargetFocus(
+      identify: "Sticker",
+      keyTarget: stickerKey, 
+      contents: [
+        TargetContent(
+          align: ContentAlign.bottom,
+          child: Text(
+            "Add a sticker to your day to represent your activity.",
+            style: TextStyle(color: Colors.white, fontSize: 16),
+          ),
+        ),
+      ],
+    ),
+
+    TargetFocus(
+      identify: "Note",
+      keyTarget: noteKey,
+      shape: ShapeLightFocus.RRect,
+      radius: 18, 
+      contents: [
+        TargetContent(
+          align: ContentAlign.bottom,
+          child: Text(
+            "Add a personal note about your day or specific entries.",
+            style: TextStyle(color: Colors.white, fontSize: 16),
+          ),
+        ),
+      ],
+    ),
+  ];
+}
+
+  @override
+  void showTutorial() {
+  initTutorial();
+  _tutorialCoachMark = TutorialCoachMark(
+    targets: targets,
+    textSkip: "SKIP",
+    opacityShadow: 0.8,
+  );
+
+  _tutorialCoachMark.show(context: context);
+}
+  @override
+  Future<void> checkDiaryTutorial() async {
+  final prefs = await SharedPreferences.getInstance();
+  bool seen = prefs.getBool('seenDiaryTutorial') ?? false;
+
+  if (!seen) {
+    showTutorial();
+    await prefs.setBool('seenDiaryTutorial', true);
+  }
+}
+
+  @override
+  Future<void> refresh() async {
+    await _loadEntries();
+  }
 
   @override
   void initState() {
@@ -401,6 +495,7 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
   Widget _buildViewChoice() {
     const selectedColor = Color.fromARGB(255, 41, 132, 127);
     return Container(
+      key: selectTimeKey,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -592,6 +687,7 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
                 onTap: () => _showStickerSelector(day),
                 child: Icon(
                   Icons.emoji_emotions_outlined,
+                  key: stickerKey,
                   size: 18,
                   color: Colors.grey.shade600,
                 ),
@@ -807,6 +903,7 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               TextButton.icon(
+                key: noteKey,
                 onPressed: _showNoteEditor,
                 icon: const Icon(Icons.edit_note, color: Colors.blueGrey),
                 label: const Text(
