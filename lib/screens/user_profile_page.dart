@@ -75,7 +75,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
           child: Column(
             children: [
               // Logo
-              Image.asset('assets/images/CarbonDiary_logo.png', height: 150),
+              Image.asset('assets/images/cd_logo.png', height: 150),
               const SizedBox(height: 30),
               Container(
                 padding: const EdgeInsets.all(20),
