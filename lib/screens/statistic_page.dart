@@ -3,10 +3,10 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../database/db_helper.dart';
 import 'dart:math';
-import '../models/usage_summary.dart';
-import '../services/api_service.dart';
-import 'dart:convert';
-import '../utils/eco_score_calculator.dart';
+// import '../models/usage_summary.dart';
+// import '../services/api_service.dart';
+// import 'dart:convert';
+// import '../utils/eco_score_calculator.dart';
 
 class StatisticPage extends StatefulWidget {
   const StatisticPage({super.key});
@@ -17,13 +17,12 @@ class StatisticPage extends StatefulWidget {
 
 class _StatisticPageState extends State<StatisticPage> {
   String _selectedDataType = 'Travel';
-  String _selectedTimeframe = 'Weekly';
+  String _selectedTimeframe = '1W';
   DateTime _currentViewDate = DateTime.now();
   List<dynamic> travelEntries = [];
   List<dynamic> wasteEntries = [];
   List<dynamic> eatingEntries = [];
   List<dynamic> shoppingEntries = [];
-
 
   Map<String, double> travelData = {};
   Map<String, double> wasteData = {};
@@ -35,7 +34,19 @@ class _StatisticPageState extends State<StatisticPage> {
   Map<String, double> prevShoppingData = {};
 
   final List<String> dataTypes = ['Travel', 'Waste', 'Eating', 'Shopping'];
-  final List<String> timeframes = ['Weekly', 'Monthly', 'Yearly'];
+  final List<String> timeframes = ['1D', '1W', '1M', '6M', '1Y'];
+  List<String> _oneDayTimeLabels() {
+    return const ['00:00', '05:00', '10:00', '15:00', '20:00'];
+  }
+
+  String _timeBucketLabel(DateTime timestamp) {
+    final hour = timestamp.hour;
+    if (hour < 5) return '00:00';
+    if (hour < 10) return '05:00';
+    if (hour < 15) return '10:00';
+    if (hour < 20) return '15:00';
+    return '20:00';
+  }
 
   @override
   void initState() {
@@ -43,9 +54,9 @@ class _StatisticPageState extends State<StatisticPage> {
     _loadData();
   }
 
-int _weekOfMonth(DateTime date) {
-  return ((date.day - 1) ~/ 7) + 1;
-}
+  int _weekOfMonth(DateTime date) {
+    return ((date.day - 1) ~/ 7) + 1;
+  }
 
   Future<void> _loadData() async {
     travelEntries = await DBHelper.instance.getAllTravelDiaryEntries();
@@ -101,7 +112,7 @@ int _weekOfMonth(DateTime date) {
         oldShoppingData[key] = (oldShoppingData[key] ?? 0) + entry.carbon;
       }
     }
-    
+
     setState(() {
       travelData = newTravelData;
       wasteData = newWasteData;
@@ -115,41 +126,49 @@ int _weekOfMonth(DateTime date) {
   }
 
   bool _isInRange(DateTime timestamp, DateTime refDate) {
-  // Normalize everything to date-only (no time)
-  final ts = DateTime(timestamp.year, timestamp.month, timestamp.day);
-  final ref = DateTime(refDate.year, refDate.month, refDate.day);
+    final ts = DateTime(timestamp.year, timestamp.month, timestamp.day);
+    final ref = DateTime(refDate.year, refDate.month, refDate.day);
 
-  late DateTime start;
-  late DateTime end;
+    late DateTime start;
+    late DateTime end;
 
-  switch (_selectedTimeframe) {
-    case 'Weekly':
-      start = ref.subtract(Duration(days: ref.weekday - 1));
-      end = start.add(const Duration(days: 6));
-      break;
+    switch (_selectedTimeframe) {
+      case '1D':
+        start = ref;
+        end = ref;
+        break;
+      case '1W':
+        start = ref.subtract(Duration(days: ref.weekday - 1));
+        end = start.add(const Duration(days: 6));
+        break;
+      case '1M':
+        start = DateTime(ref.year, ref.month, 1);
+        end = DateTime(ref.year, ref.month + 1, 0);
+        break;
+      case '6M':
+        start = DateTime(ref.year, ref.month - 5, 1);
+        end = DateTime(ref.year, ref.month + 1, 0);
+        break;
+      case '1Y':
+        start = DateTime(ref.year, 1, 1);
+        end = DateTime(ref.year, 12, 31);
+        break;
+    }
 
-    case 'Monthly':
-      start = DateTime(ref.year, ref.month, 1);
-      end = DateTime(ref.year, ref.month + 1, 0);
-      break;
-
-    case 'Yearly':
-      start = DateTime(ref.year, 1, 1);
-      end = DateTime(ref.year, 12, 31);
-      break;
+    return !ts.isBefore(start) && !ts.isAfter(end);
   }
-
-  return !ts.isBefore(start) && !ts.isAfter(end);
-}
-
 
   DateTime _getPreviousViewDate() {
     switch (_selectedTimeframe) {
-      case 'Weekly':
+      case '1D':
+        return _currentViewDate.subtract(const Duration(days: 1));
+      case '1W':
         return _currentViewDate.subtract(const Duration(days: 7));
-      case 'Monthly':
+      case '1M':
         return DateTime(_currentViewDate.year, _currentViewDate.month - 1, 1);
-      case 'Yearly':
+      case '6M':
+        return DateTime(_currentViewDate.year, _currentViewDate.month - 6, 1);
+      case '1Y':
         return DateTime(_currentViewDate.year - 1, 1, 1);
       default:
         return _currentViewDate;
@@ -159,17 +178,27 @@ int _weekOfMonth(DateTime date) {
   void _goToPreviousPeriod() {
     setState(() {
       switch (_selectedTimeframe) {
-        case 'Weekly':
+        case '1D':
+          _currentViewDate = _currentViewDate.subtract(const Duration(days: 1));
+          break;
+        case '1W':
           _currentViewDate = _currentViewDate.subtract(const Duration(days: 7));
           break;
-        case 'Monthly':
+        case '1M':
           _currentViewDate = DateTime(
             _currentViewDate.year,
             _currentViewDate.month - 1,
             1,
           );
           break;
-        case 'Yearly':
+        case '6M':
+          _currentViewDate = DateTime(
+            _currentViewDate.year,
+            _currentViewDate.month - 6,
+            1,
+          );
+          break;
+        case '1Y':
           _currentViewDate = DateTime(_currentViewDate.year - 1, 1, 1);
           break;
       }
@@ -180,17 +209,27 @@ int _weekOfMonth(DateTime date) {
   void _goToNextPeriod() {
     setState(() {
       switch (_selectedTimeframe) {
-        case 'Weekly':
+        case '1D':
+          _currentViewDate = _currentViewDate.add(const Duration(days: 1));
+          break;
+        case '1W':
           _currentViewDate = _currentViewDate.add(const Duration(days: 7));
           break;
-        case 'Monthly':
+        case '1M':
           _currentViewDate = DateTime(
             _currentViewDate.year,
             _currentViewDate.month + 1,
             1,
           );
           break;
-        case 'Yearly':
+        case '6M':
+          _currentViewDate = DateTime(
+            _currentViewDate.year,
+            _currentViewDate.month + 6,
+            1,
+          );
+          break;
+        case '1Y':
           _currentViewDate = DateTime(_currentViewDate.year + 1, 1, 1);
           break;
       }
@@ -200,13 +239,16 @@ int _weekOfMonth(DateTime date) {
 
   String _formatKey(DateTime timestamp) {
     switch (_selectedTimeframe) {
-      case 'Weekly':
-        return DateFormat('E').format(timestamp); // Mon, Tue, ...
-      case 'Monthly':
+      case '1D':
+        return _timeBucketLabel(timestamp);
+      case '1W':
+        return DateFormat('E').format(timestamp);
+      case '1M':
         final week = _weekOfMonth(timestamp);
-        return 'Week $week'; // Week 1-5
-      case 'Yearly':
-        return DateFormat('MMM').format(timestamp); // Jan, Feb, ...
+        return 'W$week';
+      case '6M':
+      case '1Y':
+        return DateFormat('MMM').format(timestamp);
       default:
         return '';
     }
@@ -236,15 +278,23 @@ int _weekOfMonth(DateTime date) {
     final d = _currentViewDate;
 
     switch (_selectedTimeframe) {
-      case 'Weekly':
+      case '1D':
+        start = DateTime(d.year, d.month, d.day);
+        end = start;
+        break;
+      case '1W':
         start = d.subtract(Duration(days: d.weekday - 1));
         end = start.add(const Duration(days: 6));
         break;
-      case 'Monthly':
+      case '1M':
         start = DateTime(d.year, d.month, 1);
         end = DateTime(d.year, d.month + 1, 0);
         break;
-      case 'Yearly':
+      case '6M':
+        start = DateTime(d.year, d.month - 5, 1);
+        end = DateTime(d.year, d.month + 1, 0);
+        break;
+      case '1Y':
         start = DateTime(d.year, 1, 1);
         end = DateTime(d.year, 12, 31);
         break;
@@ -253,33 +303,38 @@ int _weekOfMonth(DateTime date) {
     }
 
     String format(DateTime d) => '${d.day} ${_monthName(d.month)} ${d.year}';
+    if (_selectedTimeframe == '1D') {
+      return '1 Day (${format(start)})';
+    }
+
     return '${format(start)} - ${format(end)}';
   }
 
   List<String> _generateLabelsForCurrentView() {
     switch (_selectedTimeframe) {
-      case 'Weekly':
+      case '1D':
+        return _oneDayTimeLabels();
+      case '1W':
         return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-      case 'Monthly':
+      case '1M':
         final lastDay =
             DateTime(_currentViewDate.year, _currentViewDate.month + 1, 0).day;
         final totalWeeks = ((lastDay - 1) ~/ 7) + 1;
-        return List.generate(totalWeeks, (i) => 'Week ${i + 1}');
-      case 'Yearly':
-        return [
-          'Jan',
-          'Feb',
-          'Mar',
-          'Apr',
-          'May',
-          'Jun',
-          'Jul',
-          'Aug',
-          'Sep',
-          'Oct',
-          'Nov',
-          'Dec',
-        ];
+        return List.generate(totalWeeks, (i) => 'W${i + 1}');
+      case '6M':
+        return List.generate(6, (i) {
+          final monthDate = DateTime(
+            _currentViewDate.year,
+            _currentViewDate.month - 5 + i,
+            1,
+          );
+          return DateFormat('MMM').format(monthDate);
+        });
+      case '1Y':
+        return List.generate(
+          12,
+          (i) => DateFormat('MMM').format(DateTime(0, i + 1)),
+        );
       default:
         return [];
     }
@@ -287,19 +342,21 @@ int _weekOfMonth(DateTime date) {
 
   @override
   Widget build(BuildContext context) {
-    final dataMap = _selectedDataType == 'Travel'
-    ? travelData
-    : _selectedDataType == 'Waste'
-        ? wasteData
-        : _selectedDataType == 'Eating'
+    final dataMap =
+        _selectedDataType == 'Travel'
+            ? travelData
+            : _selectedDataType == 'Waste'
+            ? wasteData
+            : _selectedDataType == 'Eating'
             ? eatingData
             : shoppingData;
 
-    final prevMap = _selectedDataType == 'Travel'
-    ? prevTravelData
-    : _selectedDataType == 'Waste'
-        ? prevWasteData
-        : _selectedDataType == 'Eating'
+    final prevMap =
+        _selectedDataType == 'Travel'
+            ? prevTravelData
+            : _selectedDataType == 'Waste'
+            ? prevWasteData
+            : _selectedDataType == 'Eating'
             ? prevEatingData
             : prevShoppingData;
 
@@ -309,37 +366,29 @@ int _weekOfMonth(DateTime date) {
           'Statistics',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: Colors.transparent
+        backgroundColor: Colors.transparent,
       ),
       backgroundColor: Colors.transparent,
       body: Padding(
         padding: const EdgeInsets.fromLTRB(20, 5, 20, 20),
         child: ListView(
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildDropdown(
-                  value: _selectedDataType,
-                  items: dataTypes,
-                  icon: Icons.grid_view,
-                  iconBgColor: const Color(0xFF1C8D51),
-                  onChanged: (v) {
-                    setState(() => _selectedDataType = v);
-                    _loadData();
-                  },
-                ),
-                _buildDropdown(
-                  value: _selectedTimeframe,
-                  items: timeframes,
-                  icon: Icons.calendar_month,
-                  iconBgColor: const Color(0xFFE9C154),
-                  onChanged: (v) {
-                    setState(() => _selectedTimeframe = v);
-                    _loadData();
-                  },
-                ),
-              ],
+            _buildSegmentSlider(
+              value: _selectedDataType,
+              items: dataTypes,
+              onChanged: (v) {
+                setState(() => _selectedDataType = v);
+                _loadData();
+              },
+            ),
+            const SizedBox(height: 10),
+            _buildSegmentSlider(
+              value: _selectedTimeframe,
+              items: timeframes,
+              onChanged: (v) {
+                setState(() => _selectedTimeframe = v);
+                _loadData();
+              },
             ),
             const SizedBox(height: 13),
             Row(
@@ -359,9 +408,8 @@ int _weekOfMonth(DateTime date) {
                 ),
               ],
             ),
-
             const SizedBox(height: 20),
-            SizedBox(height: 260, child: _buildBarChart(dataMap)),
+            SizedBox(height: 260, child: _buildLineChart(dataMap)),
             const SizedBox(height: 16),
             _buildSummaryCard(dataMap, prevMap),
           ],
@@ -370,51 +418,48 @@ int _weekOfMonth(DateTime date) {
     );
   }
 
-Widget _buildDropdown({
+  Widget _buildSegmentSlider({
     required String value,
     required List<String> items,
-    required IconData icon,
-    required Color iconBgColor,
     required Function(String) onChanged,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: const Color.fromARGB(255, 51, 50, 50)),
+        border: Border.all(color: Colors.grey.shade300),
       ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: value,
-          icon: const Icon(Icons.keyboard_arrow_down),
-          items:
-              items.map((e) {
-                return DropdownMenuItem(
-                  value: e,
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 28,
-                        height: 28,
-                        decoration: BoxDecoration(
-                          color: iconBgColor,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(icon, size: 18, color: Colors.white,
-                        ),
+      child: Row(
+        children:
+            items.map((item) {
+              final isSelected = item == value;
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => onChanged(item),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color:
+                          isSelected
+                              ? const Color.fromARGB(255, 41, 132, 127)
+                              : Colors.transparent,
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: Text(
+                      item,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color:
+                            isSelected ? Colors.white : const Color(0xFF2C2C2C),
+                        fontWeight: FontWeight.w600,
                       ),
-                      const SizedBox(width: 8),
-                      Text(e, style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                    ],
+                    ),
                   ),
-                );
-              }).toList(),
-          onChanged: (val) {
-            if (val != null) onChanged(val);
-          },
-        ),
+                ),
+              );
+            }).toList(),
       ),
     );
   }
@@ -438,9 +483,11 @@ Widget _buildDropdown({
     final avg = total / dataMap.length;
     final maxVal = dataMap.values.reduce(max);
     final minVal = dataMap.values.reduce(min);
-    final double totalPercent = 0.0;
-    final double avgPercent = -0.0;
+    final prevTotal = prevMap.values.fold(0.0, (a, b) => a + b);
+    final prevAvg = prevMap.isEmpty ? 0.0 : prevTotal / prevMap.length;
 
+    final double totalPercent = _calculatePercentChange(total, prevTotal);
+    final double avgPercent = _calculatePercentChange(avg, prevAvg);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -501,6 +548,14 @@ Widget _buildDropdown({
     );
   }
 
+  double _calculatePercentChange(double current, double previous) {
+    if (previous == 0) {
+      if (current == 0) return 0;
+      return 100;
+    }
+    return ((current - previous) / previous) * 100;
+  }
+
   Widget _highlightBox({
     required String title,
     required String value,
@@ -528,7 +583,6 @@ Widget _buildDropdown({
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 6),
-            
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
@@ -656,84 +710,104 @@ Widget _buildDropdown({
     return maxVal / 4;
   }
 
-  Widget _buildBarChart(Map<String, double> dataMap) {
+  Widget _buildLineChart(Map<String, double> dataMap) {
     if (dataMap.isEmpty) {
       return const Center(child: Text("No data"));
     }
 
     final labels = _generateLabelsForCurrentView();
-
-    final barGroups = List.generate(labels.length, (i) {
+    final spots = List.generate(labels.length, (i) {
       final value = dataMap[labels[i]] ?? 0;
-      return BarChartGroupData(
-        x: i,
-        barRods: [
-          BarChartRodData(
-            toY: value,
-            width: 18,
-            color: const Color(0xFF2FB68E), // สีเขียวเต็ม
-            borderRadius: BorderRadius.circular(6),
-          ),
-        ],
-      );
+      return FlSpot(i.toDouble(), value);
     });
 
-    return Stack(
-      children: [
-        BarChart(
-          BarChartData(
-            maxY: _calculateMaxY(dataMap),
-            barGroups: barGroups,
-            gridData: FlGridData(show: false),
-            borderData: FlBorderData(show: false),
-            titlesData: FlTitlesData(
-              leftTitles: AxisTitles(
-                sideTitles: SideTitles(
-                  showTitles: true,
-                  interval: _calculateYAxisInterval(dataMap),
-                  reservedSize: 44,
-                  getTitlesWidget: (value, _) {
-                    String text;
-
-                    if (value == 0) {
-                      text = '0';
-                    } else if (value < 0.01) {
-                      text = value.toStringAsFixed(4);
-                    } else if (value < 0.1) {
-                      text = value.toStringAsFixed(3);
-                    } else if (value < 1) {
-                      text = value.toStringAsFixed(2);
-                    } else {
-                      text = value.toStringAsFixed(0);
-                    }
-
-                    return Text(text, style: const TextStyle(fontSize: 11));
-                  },
-                ),
-              ),
-              bottomTitles: AxisTitles(
-                sideTitles: SideTitles(
-                  showTitles: true,
-                  getTitlesWidget: (value, _) {
-                    final idx = value.toInt();
-                    if (idx < labels.length) {
-                      return Text(
-                        labels[idx],
-                        style: const TextStyle(fontSize: 11),
-                      );
-                    }
-                    return const SizedBox();
-                  },
-                ),
-              ),
-              topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-              rightTitles: AxisTitles(
-                sideTitles: SideTitles(showTitles: false),
-              ),
+    return LineChart(
+      LineChartData(
+        minX: 0,
+        maxX: (labels.length - 1).toDouble(),
+        minY: 0,
+        maxY: _calculateMaxY(dataMap),
+        gridData: FlGridData(show: false),
+        borderData: FlBorderData(show: false),
+        lineBarsData: [
+          LineChartBarData(
+            spots: spots,
+            isCurved: true,
+            curveSmoothness: 0.2,
+            preventCurveOverShooting: true,
+            color: const Color(0xFF2FB68E),
+            barWidth: 3,
+            isStrokeCapRound: true,
+            dotData: FlDotData(show: true),
+            belowBarData: BarAreaData(
+              show: true,
+              color: const Color(0xFF2FB68E).withOpacity(0.18),
             ),
           ),
+        ],
+        titlesData: FlTitlesData(
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              interval: _calculateYAxisInterval(dataMap),
+              reservedSize: 44,
+              getTitlesWidget: (value, _) {
+                String text;
+
+                if (value == 0) {
+                  text = '0';
+                } else if (value < 0.01) {
+                  text = value.toStringAsFixed(4);
+                } else if (value < 0.1) {
+                  text = value.toStringAsFixed(3);
+                } else if (value < 1) {
+                  text = value.toStringAsFixed(2);
+                } else {
+                  text = value.toStringAsFixed(0);
+                }
+
+                return Text(text, style: const TextStyle(fontSize: 11));
+              },
+            ),
+          ),
+          
+        bottomTitles: AxisTitles(
+  sideTitles: SideTitles(
+    showTitles: true,
+    interval: 1,
+    getTitlesWidget: (value, meta) {
+      if (value % 1 != 0) {
+        return const SizedBox.shrink();
+      }
+
+      final idx = value.toInt();
+      if (idx < 0 || idx >= labels.length) {
+        return const SizedBox.shrink();
+      }
+
+      final step =
+          labels.length <= 6 ? 1 : (labels.length <= 12 ? 2 : 3);
+      final isLast = idx == labels.length - 1;
+
+      if (!isLast && idx % step != 0) {
+        return const SizedBox.shrink();
+      }
+
+      return SideTitleWidget(
+        axisSide: meta.axisSide,
+        space: 6,
+        child: Text(
+          labels[idx],
+          style: const TextStyle(fontSize: 10),
         ),
-      ],
+      );
+    },
+  ),
+),
+          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        ),
+      ),
     );
   }
 }

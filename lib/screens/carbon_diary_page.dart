@@ -1,24 +1,70 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:table_calendar/table_calendar.dart';
-import 'dart:io';
 import '../database/db_helper.dart';
-import '../models/waste_diary_entry.dart';
-import '../models/travel_diary_entry.dart';
 import '../models/eating_diary_entry.dart';
 import '../models/shopping_diary_entry.dart';
+import '../models/travel_diary_entry.dart';
+import '../models/waste_diary_entry.dart';
 
 class CarbonDiaryPage extends StatefulWidget {
   @override
   _CarbonDiaryPageState createState() => _CarbonDiaryPageState();
 }
 
+enum DiaryViewMode { today, week, month }
+
+// future extend
+enum StickerSource { emoji, file, asset }
+
+class DiarySticker {
+  final String value;
+  final StickerSource source;
+
+  const DiarySticker._({required this.value, required this.source});
+
+  factory DiarySticker.asset(String path) {
+    return DiarySticker._(value: path, source: StickerSource.asset);
+  }
+}
+
+class UnifiedDiaryEntry {
+  final DateTime timestamp;
+  final dynamic entry;
+  final String type;
+
+  UnifiedDiaryEntry({
+    required this.timestamp,
+    required this.entry,
+    required this.type,
+  });
+}
+
 class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
   List<UnifiedDiaryEntry> _combinedEntries = [];
-  DateTime _focusedDay = DateTime.now();
-  DateTime? _selectedDay;
-  String _filter = 'all'; // all, waste, travel
-  CalendarFormat _calendarFormat = CalendarFormat.month;
+  DateTime _selectedDay = DateTime.now();
+  DiaryViewMode _viewMode = DiaryViewMode.today;
+  String _monthFilter = 'all';
+
+  final Map<String, DiarySticker> _stickersByDay = {};
+  final Map<String, String> _notesByDay = {};
+
+  static const double _weekDayCellAspectRatio = 1;
+  static const double _monthDayCellAspectRatio = 1;
+  static const EdgeInsets _monthContainerMargin = EdgeInsets.symmetric(horizontal: 2, vertical: 2);
+  static const double _monthContainerPadding = 4;
+  static const double _categoryCardSpacing = 2;
+
+  static const List<String> _stickerImageOptions = [
+    'assets/images/stickers/catsticker1.png',
+    'assets/images/stickers/catsticker2.png',
+    'assets/images/stickers/catsticker3.png',
+    'assets/images/stickers/catsticker4.png',
+    'assets/images/stickers/catsticker5.png',
+    'assets/images/stickers/catsticker6.png',
+    'assets/images/stickers/catsticker7.png',
+    'assets/images/stickers/catsticker8.png',
+  ];
 
   @override
   void initState() {
@@ -26,15 +72,13 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
     _loadEntries();
   }
 
-  Set<DateTime> _daysWithEntries = {};
-
   Future<void> _loadEntries() async {
     final waste = await DBHelper.instance.getAllWasteDiaryEntries();
     final travel = await DBHelper.instance.getAllTravelDiaryEntries();
     final eating = await DBHelper.instance.getAllEatingDiaryEntries();
     final shopping = await DBHelper.instance.getAllShoppingDiaryEntries();
 
-    List<UnifiedDiaryEntry> combined = [
+    final combined = <UnifiedDiaryEntry>[
       ...waste.map(
         (e) =>
             UnifiedDiaryEntry(timestamp: e.timestamp, entry: e, type: 'waste'),
@@ -49,55 +93,240 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
       ),
       ...shopping.map(
         (e) => UnifiedDiaryEntry(
-            timestamp: e.timestamp, entry: e, type: 'shopping'),
+          timestamp: e.timestamp,
+          entry: e,
+          type: 'shopping',
+        ),
       ),
     ];
 
-    _daysWithEntries =
-        combined
-            .map(
-              (e) => DateTime(
-                e.timestamp.year,
-                e.timestamp.month,
-                e.timestamp.day,
-              ),
-            )
-            .toSet();
     combined.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-
-    setState(() {
-      _combinedEntries = combined;
-    });
+    setState(() => _combinedEntries = combined);
   }
 
-  List<UnifiedDiaryEntry> _getFilteredLogsForSelectedDay() {
-    if (_selectedDay == null) return [];
+  String _dayKey(DateTime day) => DateFormat('y-MM-dd').format(day);
 
-    String selectedDate = DateFormat('y-MM-dd').format(_selectedDay!);
+  List<UnifiedDiaryEntry> _entriesForDay(DateTime day, {String? filter}) {
+    final target = _dayKey(day);
     return _combinedEntries.where((entry) {
-      String entryDate = DateFormat('y-MM-dd').format(entry.timestamp);
-      bool dateMatch = entryDate == selectedDate;
-      bool typeMatch = _filter == 'all' || _filter == entry.type;
-      return dateMatch && typeMatch;
+      final isSameDay = _dayKey(entry.timestamp) == target;
+      final matchesFilter =
+          filter == null || filter == 'all' || entry.type == filter;
+      return isSameDay && matchesFilter;
     }).toList();
+  }
+
+  List<DateTime> _daysForCurrentMode() {
+    final dateOnly = DateTime(
+      _selectedDay.year,
+      _selectedDay.month,
+      _selectedDay.day,
+    );
+
+    if (_viewMode == DiaryViewMode.today) return [dateOnly];
+
+    if (_viewMode == DiaryViewMode.week) {
+      final weekStart = dateOnly.subtract(Duration(days: dateOnly.weekday - 1));
+      return List.generate(7, (i) => weekStart.add(Duration(days: i)));
+    }
+
+    final monthStart = DateTime(dateOnly.year, dateOnly.month, 1);
+    final monthEnd = DateTime(dateOnly.year, dateOnly.month + 1, 0);
+    final leading = monthStart.weekday % 7;
+    final daysInMonth = monthEnd.day;
+
+    return [
+      ...List.generate(
+        leading,
+        (i) => monthStart.subtract(Duration(days: leading - i)),
+      ),
+      ...List.generate(
+        daysInMonth,
+        (i) => DateTime(dateOnly.year, dateOnly.month, i + 1),
+      ),
+    ];
+  }
+
+  Color _categoryColor(String type) {
+    if (type == 'waste') return const Color(0xFFD9F3DD);
+    if (type == 'travel') return const Color(0xFFD9EFFF);
+    if (type == 'eating') return const Color.fromARGB(255, 233, 226, 210);
+    return const Color(0xFFFDE7D4);
+  }
+
+  IconData _categoryIcon(String type) {
+    if (type == 'waste') return Icons.recycling;
+    if (type == 'travel') return Icons.directions_car;
+    if (type == 'eating') return Icons.restaurant_menu;
+    return Icons.shopping_bag;
+  }
+
+  double _stickerSizeForView() {
+    if (_viewMode == DiaryViewMode.today) return 170;
+    if (_viewMode == DiaryViewMode.week) return 50;
+    return 26;
+  }
+
+  double _entryTextSizeForView() {
+    if (_viewMode == DiaryViewMode.today) return 15;
+    if (_viewMode == DiaryViewMode.week) return 11;
+    return 9;
+  }
+
+  int _entryLimitForView() {
+    if (_viewMode == DiaryViewMode.today) return 5; // X
+    if (_viewMode == DiaryViewMode.week) return 3;
+    return 2; // X
+  }
+
+  Future<void> _showStickerSelector(DateTime day) async {
+    if (_viewMode == DiaryViewMode.month) return;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                ..._stickerImageOptions.map(
+                  (assetPath) => InkWell(
+                    onTap: () {
+                      setState(() {
+                        _stickersByDay[_dayKey(day)] = DiarySticker.asset(
+                          assetPath,
+                        );
+                      });
+                      Navigator.pop(context);
+                    },
+                    child: Container(
+                      width: 65,
+                      height: 65,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade300),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      padding: const EdgeInsets.all(6),
+                      child: Image.asset(assetPath, fit: BoxFit.contain),
+                    ),
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () {
+                    setState(() => _stickersByDay.remove(_dayKey(day)));
+                    Navigator.pop(context);
+                  },
+                  icon: const Icon(
+                    Icons.delete_outline,
+                    color: Colors.blueGrey,
+                  ),
+                  label: const Text(
+                    'Remove sticker',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blueGrey,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showNoteEditor() async {
+    final key = _dayKey(_selectedDay);
+    final initialNote = _notesByDay[key] ?? '';
+    final result = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        var draftNote = initialNote;
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 16,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Additional note',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              TextFormField(
+                initialValue: initialNote,
+                minLines: 3,
+                maxLines: 6,
+                onChanged: (value) => draftNote = value,
+                decoration: const InputDecoration(
+                  hintText: 'Write your note for today...',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    child: const Text('Clear'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context, draftNote.trim());
+                    },
+                    child: const Text('Save'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (!mounted) return;
+    setState(() {
+      if (result == null || result.isEmpty) {
+        _notesByDay.remove(key);
+      } else {
+        _notesByDay[key] = result;
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    Map<String, List<UnifiedDiaryEntry>> grouped = {};
-
-    for (var entry in _combinedEntries) {
-      String date = DateFormat('y-MM-dd').format(entry.timestamp);
-      grouped.putIfAbsent(date, () => []);
-      grouped[date]!.add(entry);
-    }
-
     return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Color.fromARGB(255, 155, 255, 242),
+            Color.fromARGB(255, 183, 255, 236),
+            Color.fromARGB(255, 230, 252, 252),
+            Color(0xFFFDFDFD),
+          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+      ),
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          title: Text(
-            'Carbon Diary Log',
+          title: const Text(
+            'Carbon Diary',
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
           backgroundColor: Colors.transparent,
@@ -105,13 +334,14 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
           foregroundColor: Theme.of(context).colorScheme.onBackground,
           actions: [
             IconButton(
-              icon: Icon(Icons.upload_file),
+              icon: const Icon(Icons.upload_file),
               tooltip: 'Export DB',
               onPressed: () async {
                 await DBHelper.instance.exportDatabase();
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text('Database exported')));
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Database exported')),
+                );
               },
             ),
           ],
@@ -119,182 +349,586 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
         body: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 10,
-              ),
-              child: Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: Color(0xFF4C6A4F), width: 1.2),
-                  borderRadius: BorderRadius.circular(14),
-                  color: Colors.white.withOpacity(0.85),
-                ),
-                child: Column(children: [_buildCalendar()]),
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _buildViewChoice(),
             ),
-            SizedBox(height: 10),
-            _buildFilterChips(),
-            SizedBox(height: 10),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _buildTodayHeader(),
+            ),
+            const SizedBox(height: 6),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _buildPeriodHeader(),
+            ),
+            const SizedBox(height: 8),
             Expanded(
-              child:
-                  _selectedDay == null
-                      ? Center(child: Text("Select a date to view entries"))
-                      : _getFilteredLogsForSelectedDay().isEmpty
-                      ? Center(child: Text("No entries for selected date"))
-                      : ListView(
-                        children: [
-                          // _buildDailySummary(_getFilteredLogsForSelectedDay()),
-                          ..._getFilteredLogsForSelectedDay().map((log) {
-                            return log.type == 'waste'
-                                ? _buildWasteCard(log.entry as WasteDiaryEntry)
-                                : log.type == 'travel'
-                                ? _buildTravelCard(log.entry as TravelDiaryEntry)
-                                : log.type == 'shopping'
-                                ? _buildShoppingCard(log.entry as ShoppingDiaryEntry)
-                                : _buildEatingCard(log.entry as EatingDiaryEntry);
-                          }).toList(),
-                        ],
-                      ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _buildDiaryGrid(),
+              ),
             ),
+            if (_viewMode == DiaryViewMode.today) _buildTodayNoteSection(),
+            const SizedBox(height: 25),
+            if (_viewMode == DiaryViewMode.month) ...[
+              _buildMonthFilterChips(),
+              const SizedBox(height: 8),
+              Expanded(child: _buildMonthSelectedDateCards()),
+            ],
+            const SizedBox(height: 8),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildShoppingCard(ShoppingDiaryEntry log) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
-    child: Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.blueGrey.shade100),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Card(
-        color: Color(0xFFFFF3E0),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+  Widget _buildTodayHeader() {
+    final now = DateTime.now();
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Text(
+        'Today: ${DateFormat('EEE, d MMM y').format(now)}',
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: Colors.grey.shade700,
         ),
-        elevation: 2,
-        margin: EdgeInsets.zero,
-        child: ListTile(
-          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          leading: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-            ),
-            padding: EdgeInsets.all(10),
-            child: Icon(
-              Icons.shopping_bag,
-              color: Colors.orange,
-              size: 26,
+      ),
+    );
+  }
+
+  Widget _buildViewChoice() {
+    const selectedColor = Color.fromARGB(255, 41, 132, 127);
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Row(
+        children: [
+          _viewModeButton('Today', DiaryViewMode.today, selectedColor),
+          _viewModeButton('Week', DiaryViewMode.week, selectedColor),
+          _viewModeButton('Month', DiaryViewMode.month, selectedColor),
+        ],
+      ),
+    );
+  }
+
+  Widget _viewModeButton(String text, DiaryViewMode mode, Color selectedColor) {
+    final isSelected = _viewMode == mode;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _viewMode = mode),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: isSelected ? selectedColor : Colors.transparent,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Text(
+            text,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: isSelected ? Colors.white : Colors.black,
+              fontWeight: FontWeight.w600,
             ),
           ),
-          title: Text(
-            log.name,
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPeriodHeader() {
+    String title;
+    final d = _selectedDay;
+    if (_viewMode == DiaryViewMode.today) {
+      title = DateFormat('EEE, d MMM y').format(d);
+    } else if (_viewMode == DiaryViewMode.week) {
+      final start = d.subtract(Duration(days: d.weekday - 1));
+      final end = start.add(const Duration(days: 6));
+      title =
+          '${DateFormat('d MMM').format(start)} - ${DateFormat('d MMM').format(end)}';
+    } else {
+      title = DateFormat('MMMM y').format(d);
+    }
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        Row(
+          children: [
+            IconButton(
+              onPressed: () {
+                setState(() {
+                  if (_viewMode == DiaryViewMode.today) {
+                    _selectedDay = _selectedDay.subtract(
+                      const Duration(days: 1),
+                    );
+                  } else if (_viewMode == DiaryViewMode.week) {
+                    _selectedDay = _selectedDay.subtract(
+                      const Duration(days: 7),
+                    );
+                  } else {
+                    _selectedDay = DateTime(
+                      _selectedDay.year,
+                      _selectedDay.month - 1,
+                      1,
+                    );
+                  }
+                });
+              },
+              icon: const Icon(Icons.chevron_left),
+            ),
+            IconButton(
+              onPressed: () {
+                setState(() {
+                  if (_viewMode == DiaryViewMode.today) {
+                    _selectedDay = _selectedDay.add(const Duration(days: 1));
+                  } else if (_viewMode == DiaryViewMode.week) {
+                    _selectedDay = _selectedDay.add(const Duration(days: 7));
+                  } else {
+                    _selectedDay = DateTime(
+                      _selectedDay.year,
+                      _selectedDay.month + 1,
+                      1,
+                    );
+                  }
+                });
+              },
+              icon: const Icon(Icons.chevron_right),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDiaryGrid() {
+    if (_viewMode == DiaryViewMode.today) {
+      return _buildTodayDiaryList(_selectedDay);
+    }
+
+    final days = _daysForCurrentMode();
+    final columns = _viewMode == DiaryViewMode.week ? 2 : 7;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Column(
+        children: [
+          if (_viewMode == DiaryViewMode.month)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(6, 8, 6, 8),
+              child: Row(
+                children:
+                    const ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+                        .map(
+                          (d) => Expanded(
+                            child: Text(
+                              d,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ),
+                        )
+                        .toList(),
+              ),
+            ),
+          Expanded(
+            child: GridView.builder(
+              padding: const EdgeInsets.all(4),
+              itemCount: days.length,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: columns,
+                childAspectRatio:
+                    _viewMode == DiaryViewMode.month
+                        ? _monthDayCellAspectRatio
+                        : _weekDayCellAspectRatio,
+              ),
+              itemBuilder: (context, index) => _buildDayCell(days[index]),
+            ),
           ),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTodayDiaryList(DateTime day) {
+    final entries = _entriesForDay(day);
+    final sticker = _stickersByDay[_dayKey(day)];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: ListView(
+        padding: const EdgeInsets.all(8),
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Category: ${log.category}',
-                style: TextStyle(fontSize: 12),
+                '${day.day} ${DateFormat('EEE').format(day)}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
               ),
-              Text(
-                'Carbon: ${log.carbon.toStringAsFixed(4)} kgCO₂',
-                style: TextStyle(fontSize: 12),
-              ),
-              Text(
-                DateFormat.Hm().format(log.timestamp),
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              GestureDetector(
+                onTap: () => _showStickerSelector(day),
+                child: Icon(
+                  Icons.emoji_emotions_outlined,
+                  size: 18,
+                  color: Colors.grey.shade600,
+                ),
               ),
             ],
           ),
+          if (sticker != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 2, bottom: 2),
+              child: ClipRRect(
+                child: Image.asset(
+                  sticker.value,
+                  width: _stickerSizeForView(),
+                  height: _stickerSizeForView(),
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) {
+                    return const Icon(Icons.broken_image_outlined);
+                  },
+                ),
+              ),
+            ),
+          const SizedBox(height: 6),
+          if (entries.isEmpty)
+            const Text('No entries for this day')
+          else
+            ...entries.map(
+              (e) => Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                decoration: BoxDecoration(
+                  color: _categoryColor(e.type),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(_categoryIcon(e.type), size: 16),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        _entryPreview(e),
+                        style: const TextStyle(fontSize: 13),
+                      ),
+                    ),
+                    Text(
+                      DateFormat.Hm().format(e.timestamp),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // Month
+  Widget _buildDayCell(DateTime day) {
+    final entries = _entriesForDay(day);
+    final isSelected = _dayKey(day) == _dayKey(_selectedDay);
+    final isInCurrentMonth = day.month == _selectedDay.month;
+    final isToday = _dayKey(day) == _dayKey(DateTime.now());
+    final sticker = _stickersByDay[_dayKey(day)];
+    final textSize = _entryTextSizeForView();
+    final stickerSize = _stickerSizeForView();
+    final entryLimit = _entryLimitForView();
+
+    return GestureDetector(
+      onTap: () => setState(() => _selectedDay = day),
+      onLongPress:
+          _viewMode == DiaryViewMode.month
+              ? null
+              : () => _showStickerSelector(day),
+      child: Container(
+        margin:
+            _viewMode == DiaryViewMode.month
+                ? _monthContainerMargin
+                : const EdgeInsets.all(2),
+        padding: EdgeInsets.all(_viewMode == DiaryViewMode.month ? _monthContainerPadding : 6),
+        decoration: BoxDecoration(
+          color:
+              (_viewMode != DiaryViewMode.today && isToday)
+                  ? const Color.fromARGB(255, 220, 248, 255)
+                  : isSelected
+                  ? const Color(0xFFE9F4EA)
+                  : Colors.white,
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  _viewMode == DiaryViewMode.month
+                      ? '${day.day}'
+                      : '${day.day} ${DateFormat('EEE').format(day)}',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: _viewMode == DiaryViewMode.month ? 10 : 11,
+                    color: isInCurrentMonth ? Colors.black : Colors.grey,
+                  ),
+                ),
+                if (_viewMode != DiaryViewMode.month)
+                  GestureDetector(
+                    onTap: () => _showStickerSelector(day),
+                    child: Icon(
+                      Icons.emoji_emotions_outlined,
+                      size: 14,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+              ],
+            ),
+            if (_viewMode != DiaryViewMode.month && sticker != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.asset(
+                    sticker.value,
+                    width: stickerSize,
+                    height: stickerSize,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) {
+                      return const Icon(Icons.broken_image_outlined);
+                    },
+                  ),
+                ),
+              ),
+            SizedBox(height: _viewMode == DiaryViewMode.month ? 2 : 4),
+            if (_viewMode == DiaryViewMode.month)
+              if (entries.isNotEmpty)
+                Text(
+                  '+${entries.length} more',
+                  style: TextStyle(
+                    fontSize: textSize,
+                    color: Colors.grey.shade600,
+                  ),
+                )
+              else
+                const SizedBox.shrink()
+            else ...[
+              ...entries
+                  .take(entryLimit)
+                  .map(
+                    (e) => Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(bottom: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _categoryColor(e.type),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(_categoryIcon(e.type), size: textSize + 1),
+                          const SizedBox(width: 3),
+                          Expanded(
+                            child: Text(
+                              _entryPreview(e),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: textSize),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              if (entries.length > entryLimit)
+                Text(
+                  '+${entries.length - entryLimit} more',
+                  style: TextStyle(
+                    fontSize: textSize,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+            ],
+          ],
         ),
       ),
-    ),
-  );
-}
+    );
+  }
+
+  Widget _buildTodayNoteSection() {
+    final note = _notesByDay[_dayKey(_selectedDay)] ?? '';
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Today note',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              TextButton.icon(
+                onPressed: _showNoteEditor,
+                icon: const Icon(Icons.edit_note, color: Colors.blueGrey),
+                label: const Text(
+                  'Add/Edit',
+                  style: TextStyle(color: Colors.blueGrey),
+                ),
+              ),
+            ],
+          ),
+          Text(
+            note.isEmpty ? 'No additional note yet.' : note,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: Colors.grey.shade800),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMonthFilterChips() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Wrap(
+        spacing: 8,
+        children: [
+          _buildFilterChip('All', 'all'),
+          _buildFilterChip('Travel', 'travel'),
+          _buildFilterChip('Waste', 'waste'),
+          _buildFilterChip('Shop', 'shopping'),
+          _buildFilterChip('Eat', 'eating'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(String label, String value) {
+    return ChoiceChip(
+      label: Text(label, style: const TextStyle(fontSize: 11)),
+      selected: _monthFilter == value,
+      selectedColor: const Color.fromARGB(255, 41, 132, 127),
+      backgroundColor: Colors.grey.shade100,
+      labelStyle: TextStyle(
+        color: _monthFilter == value ? Colors.white : Colors.black,
+      ),
+      onSelected: (_) => setState(() => _monthFilter = value),
+    );
+  }
+
+  Widget _buildMonthSelectedDateCards() {
+    final logs = _entriesForDay(_selectedDay, filter: _monthFilter);
+
+    if (logs.isEmpty) {
+      return const Center(child: Text('No entries for selected day'));
+    }
+
+    return ListView(
+      children:
+          logs.map((log) {
+            if (log.type == 'waste') {
+              return _buildWasteCard(log.entry as WasteDiaryEntry);
+            }
+            if (log.type == 'travel') {
+              return _buildTravelCard(log.entry as TravelDiaryEntry);
+            }
+            if (log.type == 'shopping') {
+              return _buildShoppingCard(log.entry as ShoppingDiaryEntry);
+            }
+            return _buildEatingCard(log.entry as EatingDiaryEntry);
+          }).toList(),
+    );
+  }
+
+  Widget _buildShoppingCard(ShoppingDiaryEntry log) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: _categoryCardSpacing),
+      child: Card(
+        color: const Color(0xFFFFF3E0),
+        child: ListTile(
+          leading: const Icon(
+            Icons.shopping_bag,
+            color: Color.fromARGB(255, 255, 176, 57),
+          ),
+          title: Text(log.name, style: TextStyle(fontSize: 15)),
+          subtitle: Text(
+            'Category: ${log.category} • ${log.carbon.toStringAsFixed(4)} kgCO₂',
+            style: TextStyle(fontSize: 13),
+          ),
+          trailing: Text(DateFormat.Hm().format(log.timestamp)),
+        ),
+      ),
+    );
+  }
 
   Widget _buildWasteCard(WasteDiaryEntry log) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.blueGrey.shade100),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Card(
-          color: Color(0xFFE8F5E9),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          elevation: 2,
-          margin: EdgeInsets.zero,
-          child: ListTile(
-            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            leading:
-                log.imagePath != null &&
-                        log.imagePath!.isNotEmpty &&
-                        File(log.imagePath!).existsSync()
-                    ? GestureDetector(
-                      onTap: () {
-                        showDialog(
-                          context: context,
-                          builder:
-                              (_) => Dialog(
-                                backgroundColor: Colors.transparent,
-                                child: InteractiveViewer(
-                                  child: Image.file(File(log.imagePath!)),
-                                ),
-                              ),
-                        );
-                      },
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: SizedBox(
-                          width: 40,
-                          height: 40,
-                          child: Image.file(
-                            File(log.imagePath!),
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                    )
-                    : Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      padding: EdgeInsets.all(10),
-                      child: Icon(
-                        Icons.recycling,
-                        color: Color(0xFF4C6A4F),
-                        size: 26,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: _categoryCardSpacing),
+      child: Card(
+        color: const Color(0xFFE8F5E9),
+        child: ListTile(
+          leading:
+              log.imagePath != null &&
+                      log.imagePath!.isNotEmpty &&
+                      File(log.imagePath!).existsSync()
+                  ? ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: SizedBox(
+                      width: 38,
+                      height: 38,
+                      child: Image.file(
+                        File(log.imagePath!),
+                        fit: BoxFit.cover,
                       ),
                     ),
-            title: Text(
-              log.name,
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (log.quantity != null)
-                  Text('Qty: ${log.quantity}', style: TextStyle(fontSize: 12)),
-                  Text('Carbon: ${log.carbon.toStringAsFixed(4)} kgCO₂', style: TextStyle(fontSize: 12)),
-                if (log.note != null && log.note!.isNotEmpty)
-                  Text('Note: ${log.note}', style: TextStyle(fontSize: 12)),
-                Text(
-                  DateFormat.Hm().format(log.timestamp),
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                ),
-              ],
-            ),
+                  )
+                  : const Icon(Icons.recycling, color: Color(0xFF4C6A4F)),
+          title: Text(log.name, style: TextStyle(fontSize: 15)),
+          subtitle: Text(
+            'Qty: ${log.quantity ?? '-'} • ${log.carbon.toStringAsFixed(4)} kgCO₂',
+            style: TextStyle(fontSize: 13),
           ),
+          trailing: Text(DateFormat.Hm().format(log.timestamp)),
         ),
       ),
     );
@@ -302,56 +936,23 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
 
   Widget _buildEatingCard(EatingDiaryEntry log) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.blueGrey.shade100),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Card(
-          color: Color.fromARGB(255, 222, 219, 206),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: _categoryCardSpacing),
+      child: Card(
+        color: const Color.fromARGB(255, 222, 219, 206),
+        child: ListTile(
+          leading: const Icon(
+            Icons.restaurant_menu,
+            color: Color.fromARGB(255, 110, 97, 39),
           ),
-          elevation: 2,
-          margin: EdgeInsets.zero, 
-          child: ListTile(
-            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            leading: Container(
-              decoration: BoxDecoration(
-                color: Colors.white, 
-                shape: BoxShape.circle,
-              ),
-              padding: EdgeInsets.all(10),
-              child: Icon(
-                Icons.restaurant_menu,
-                color: Color.fromARGB(255, 110, 97, 39),
-                size: 26,
-              ),
-            ),
-            title: Text(
-              '${log.name} ${log.variant != null ? '(${log.variant})' : ''}',
-              maxLines: 1,
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Qty: ${log.quantity}',
-                  style: TextStyle(fontSize: 12),
-                ),
-                Text(
-                  'Carbon: ${log.carbon.toStringAsFixed(4)} kgCO₂',
-                  style: TextStyle(fontSize: 12),
-                ),
-                Text(
-                  DateFormat.Hm().format(log.timestamp),
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                ),
-              ],
-            ),
+          title: Text(
+            '${log.name} ${log.variant != null ? '(${log.variant})' : ''}',
+            style: TextStyle(fontSize: 15),
           ),
+          subtitle: Text(
+            '${log.carbon.toStringAsFixed(4)} kgCO₂',
+            style: TextStyle(fontSize: 13),
+          ),
+          trailing: Text(DateFormat.Hm().format(log.timestamp)),
         ),
       ),
     );
@@ -359,218 +960,36 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
 
   Widget _buildTravelCard(TravelDiaryEntry log) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.blueGrey.shade100),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Card(
-          color: Color(0xFFE3F2FD),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: _categoryCardSpacing),
+      child: Card(
+        color: const Color(0xFFE3F2FD),
+        child: ListTile(
+          leading: const Icon(
+            Icons.directions_car_filled,
+            color: Color(0xFF1976D2),
           ),
-          elevation: 2,
-          margin: EdgeInsets.zero, 
-          child: ListTile(
-            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            leading: Container(
-              decoration: BoxDecoration(
-                color: Colors.white, 
-                shape: BoxShape.circle,
-              ),
-              padding: EdgeInsets.all(10),
-              child: Icon(
-                Icons.directions_car_filled,
-                color: Color(0xFF1976D2),
-                size: 26,
-              ),
-            ),
-            title: Text(
-              '${log.startLocation} → ${log.endLocation}',
-              maxLines: 1,
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${log.carbon.toStringAsFixed(2)} kgCO₂ | ${log.distance.toStringAsFixed(1)} km | ${log.mode}',
-                  style: TextStyle(fontSize: 12),
-                ),
-                Text(
-                  DateFormat.Hm().format(log.timestamp),
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                ),
-              ],
-            ),
+          title: Text(
+            '${log.startLocation} → ${log.endLocation}',
+            maxLines: 2,
+            style: TextStyle(fontSize: 14),
           ),
+          subtitle: Text(
+            '${log.mode} • ${log.distance.toStringAsFixed(1)} km • ${log.carbon.toStringAsFixed(2)} kgCO₂',
+            style: TextStyle(fontSize: 12),
+          ),
+          trailing: Text(DateFormat.Hm().format(log.timestamp)),
         ),
       ),
     );
   }
 
-  // Widget _buildDailySummary(List<UnifiedDiaryEntry> logs) {
-  //   int wasteCount = 0; // quantity
-  //   int travelCount = 0; // log
-  //   int eatingCount = 0; // log
-  //   int shoppingCount = 0; // log
-  //   double totalTravelCarbon = 0.0;
-  //   double totalWasteCarbon = 0.0;
-  //   double totalEatingCarbon = 0.0;
-  //   double totalShoppingCarbon = 0.0;
-
-  //   for (var log in logs) {
-  //     if (log.type == 'waste') {
-  //       final wasteEntry = log.entry as WasteDiaryEntry;
-  //       wasteCount += wasteEntry.quantity;
-  //       totalWasteCarbon += wasteEntry.carbon;
-  //     } else if (log.type == 'travel') {
-  //       travelCount++;
-  //       final travelEntry = log.entry as TravelDiaryEntry;
-  //       totalTravelCarbon += travelEntry.carbon;
-  //     } else if (log.type == 'eating') {
-  //       eatingCount++;
-  //       final eatingEntry = log.entry as EatingDiaryEntry;
-  //       totalEatingCarbon += eatingEntry.carbon;
-  //     } else if (log.type == 'shopping') {
-  //       final shoppingEntry = log.entry as ShoppingDiaryEntry;
-  //       totalShoppingCarbon += shoppingEntry.carbon;
-  //     }
-  //   }
-  //   return Container(
-  //     margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-  //     decoration: BoxDecoration(
-  //       borderRadius: BorderRadius.circular(14),
-  //     ),
-  //     child: Card(
-  //       color: const Color.fromARGB(255, 255, 250, 225),
-  //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-  //       elevation: 2,
-  //       margin: EdgeInsets.zero,
-  //       child: Padding(
-  //         padding: const EdgeInsets.all(14.0),
-  //         child: Row(
-  //           children: [
-  //             Icon(Icons.summarize, size: 18, color: Colors.blueGrey),
-  //             SizedBox(width: 12),
-  //             Text(
-  //               '♻️ $wasteCount  💨 ${totalWasteCarbon.toStringAsFixed(4)} kgCO₂  ||  🚗 $travelCount  💨 ${totalTravelCarbon.toStringAsFixed(2)} kgCO₂',
-  //               style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-  //             ),
-  //           ],
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }
-
-  Widget _buildFilterChips() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Wrap(
-        spacing: 10,
-        children: [
-          _buildChip("All", 'all'),
-          _buildChip("Eating", 'eating'),
-          _buildChip("Waste", 'waste'),
-          _buildChip("Travel", 'travel'),
-          _buildChip("Shopping", 'shopping'),
-        ],
-      ),
-    );
+  String _entryPreview(UnifiedDiaryEntry e) {
+    if (e.type == 'waste') return (e.entry as WasteDiaryEntry).name;
+    if (e.type == 'travel') {
+      final t = e.entry as TravelDiaryEntry;
+      return '${t.mode} ${t.distance.toStringAsFixed(0)}km';
+    }
+    if (e.type == 'shopping') return (e.entry as ShoppingDiaryEntry).name;
+    return (e.entry as EatingDiaryEntry).name;
   }
-
-  Widget _buildChip(String label, String value) {
-    return ChoiceChip(
-      label: Text(label, style: TextStyle(fontSize: 13)),
-      selected: _filter == value,
-      selectedColor: Color.fromARGB(255, 72, 130, 96),
-      backgroundColor: Colors.grey.shade100,
-      labelStyle: TextStyle(
-        color: _filter == value ? Colors.white : Colors.black,
-      ),
-      onSelected: (_) => setState(() => _filter = value),
-    );
-  }
-
-  Widget _buildCalendar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: TableCalendar(
-        firstDay: DateTime.utc(2023, 1, 1),
-        lastDay: DateTime.utc(2030, 12, 31),
-        focusedDay: _focusedDay,
-        selectedDayPredicate: (day) => isSameDay(day, _selectedDay),
-        onDaySelected: (selectedDay, focusedDay) {
-          setState(() {
-            _selectedDay = selectedDay;
-            _focusedDay = focusedDay;
-          });
-        },
-        calendarFormat: _calendarFormat,
-        onFormatChanged: (format) {
-          setState(() {
-            _calendarFormat = format;
-          });
-        },
-        availableCalendarFormats: const {CalendarFormat.month: 'Month'},
-        calendarStyle: CalendarStyle(
-          markerDecoration: BoxDecoration(
-            color: Color(0xFF4C6A4F),
-            shape: BoxShape.circle,
-          ),
-          todayDecoration: BoxDecoration(
-            color: Color.fromARGB(255, 212, 138, 138),
-            shape: BoxShape.circle,
-          ),
-          selectedDecoration: BoxDecoration(
-            color: Color.fromARGB(255, 82, 118, 153),
-            shape: BoxShape.circle,
-          ),
-          outsideDaysVisible: false,
-        ),
-        headerStyle: HeaderStyle(
-          titleTextStyle: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-          formatButtonVisible: false,
-          titleCentered: true,
-        ),
-        calendarBuilders: CalendarBuilders(
-          markerBuilder: (context, date, events) {
-            if (_daysWithEntries.contains(
-              DateTime(date.year, date.month, date.day),
-            )) {
-              return Positioned(
-                bottom: 1,
-                child: Container(
-                  width: 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: Colors.green,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              );
-            }
-            return null;
-          },
-        ),
-      ),
-    );
-  }
-}
-
-class UnifiedDiaryEntry {
-  final DateTime timestamp;
-  final dynamic entry; // WasteDiaryEntry / TravelDiaryEntry
-  final String type; // waste / travel
-
-  UnifiedDiaryEntry({
-    required this.timestamp,
-    required this.entry,
-    required this.type,
-  });
 }

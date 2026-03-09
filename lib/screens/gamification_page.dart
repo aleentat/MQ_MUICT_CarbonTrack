@@ -30,6 +30,16 @@ class _GamificationPageState extends State<GamificationPage> {
 
   String _treeAsset(TreeStage stage) {
     switch (stage) {
+      // case TreeStage.dry:
+      //   return 'assets/gif/dry-tree.gif';
+      // case TreeStage.seed:
+      //   return 'assets/gif/seed.gif';
+      // case TreeStage.sprout:
+      //   return 'assets/gif/growing-plant.gif';
+      // case TreeStage.healthy:
+      //   return 'assets/gif/tree.gif';
+      // case TreeStage.blooming:
+      //   return 'assets/gif/blossom-tree.gif';
       case TreeStage.dry:
         return 'assets/images/trees/drytree.png';
       case TreeStage.seed:
@@ -118,7 +128,8 @@ class _GamificationPageState extends State<GamificationPage> {
         children: [
           const Text(
             'Your Monthly Forest',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 20),
           SizedBox(
             width: 320,
