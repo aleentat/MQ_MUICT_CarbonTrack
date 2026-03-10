@@ -31,6 +31,7 @@ class _HomePageState extends State<HomePage> {
   GlobalKey diaryButtonKey = GlobalKey();
   GlobalKey statsButtonKey = GlobalKey();
   GlobalKey profileButtonKey = GlobalKey();
+  GlobalKey infoButtonKey = GlobalKey();
   GlobalKey refreshButtonKey = GlobalKey();
 
   late TutorialCoachMark tutorialCoachMark;
@@ -47,6 +48,20 @@ class _HomePageState extends State<HomePage> {
             align: ContentAlign.bottom,
             child: Text(
               "Tap here to view or edit your profile.",
+              style: TextStyle(color: Colors.white, fontSize: 16),
+            ),
+          ),
+        ],
+      ),
+
+      TargetFocus(
+        identify: "Info",
+        keyTarget: infoButtonKey,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            child: Text(
+              "Tap here to view app tutorials anytime.",
               style: TextStyle(color: Colors.white, fontSize: 16),
             ),
           ),
@@ -411,6 +426,7 @@ Future<int> _calculateWeeklyEcoScore() async {
           actions: [
             IconButton(key: profileButtonKey,icon: const Icon(Icons.person), onPressed: () {Navigator.push(context, MaterialPageRoute(builder: (_) => const UserProfilePage(),),);},),
             IconButton(
+              key: infoButtonKey,
               icon: Icon(Icons.info_outline),
               onPressed: () {
                 switch (_selectedIndex) {
