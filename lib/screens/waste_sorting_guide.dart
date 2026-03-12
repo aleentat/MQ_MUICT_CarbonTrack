@@ -353,7 +353,7 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
           const SizedBox(width: 15),
           Expanded(
             child: Text(
-              'Track your travel footprint 🚗\nEvery trip counts',
+              'Track your waste footprint and learn how to sort waste properly!',
               style: TextStyle(fontSize: 15),
             ),
           ),
