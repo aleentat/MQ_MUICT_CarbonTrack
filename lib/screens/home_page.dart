@@ -68,6 +68,7 @@ Future<int> _calculateWeeklyEcoScore() async {
     final travelEntries = await DBHelper.instance.getAllTravelDiaryEntries();
     final wasteEntries = await DBHelper.instance.getAllWasteDiaryEntries();
     final foodEntries = await DBHelper.instance.getAllEatingDiaryEntries();
+    final shoppingEntries = await DBHelper.instance.getAllShoppingDiaryEntries();
 
     final now = DateTime.now();
     final weekStart = DateTime(
@@ -101,6 +102,10 @@ Future<int> _calculateWeeklyEcoScore() async {
       addEntry(e.timestamp, e.carbon);
     }
 
+    for (final e in shoppingEntries) {
+      addEntry(e.timestamp, e.carbon);
+    }
+
     int weeklyScore = 0;
     dailyTotals.forEach((day, dailyCO2) {
       weeklyScore += EcoScoreCalculator.dailyScore(dailyCO2);
@@ -116,6 +121,7 @@ Future<int> _calculateWeeklyEcoScore() async {
     final travelEntries = await DBHelper.instance.getAllTravelDiaryEntries();
     final wasteEntries = await DBHelper.instance.getAllWasteDiaryEntries();
     final foodEntries = await DBHelper.instance.getAllEatingDiaryEntries();
+    final shoppingEntries = await DBHelper.instance.getAllShoppingDiaryEntries();
 
     DateTime now = DateTime.now();
     DateTime firstDayOfMonth = DateTime(now.year, now.month, 1);
@@ -148,6 +154,10 @@ Future<int> _calculateWeeklyEcoScore() async {
       }
 
       for (final e in foodEntries) {
+        addEntry(e.timestamp, e.carbon);
+      }
+
+      for (final e in shoppingEntries) {
         addEntry(e.timestamp, e.carbon);
       }
 
