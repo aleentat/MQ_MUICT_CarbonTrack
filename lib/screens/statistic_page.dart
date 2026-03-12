@@ -3,10 +3,6 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../database/db_helper.dart';
 import 'dart:math';
-// import '../models/usage_summary.dart';
-// import '../services/api_service.dart';
-// import 'dart:convert';
-// import '../utils/eco_score_calculator.dart';
 
 class StatisticPage extends StatefulWidget {
   const StatisticPage({super.key});
@@ -33,18 +29,27 @@ class _StatisticPageState extends State<StatisticPage> {
   Map<String, double> shoppingData = {};
   Map<String, double> prevShoppingData = {};
 
-  final List<String> dataTypes = ['Travel', 'Waste', 'Eating', 'Shopping'];
+  final List<String> dataTypes = ['All', 'Travel', 'Waste', 'Eating', 'Shopping'];
   final List<String> timeframes = ['1D', '1W', '1M', '6M', '1Y'];
+  final List<String> _allCategoryLabels = ['Travel', 'Waste', 'Eating', 'Shopping'];
+  final List<Color> _allCategoryColors = const [
+    Color(0xFF4E79A7),
+    Color.fromARGB(255, 87, 225, 92),
+    Color.fromARGB(255, 146, 114, 81),
+    Color.fromARGB(255, 255, 175, 70),
+  ];
+  
   List<String> _oneDayTimeLabels() {
-    return const ['00:00', '05:00', '10:00', '15:00', '20:00'];
+    return const ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '24:00'];
   }
 
   String _timeBucketLabel(DateTime timestamp) {
     final hour = timestamp.hour;
-    if (hour < 5) return '00:00';
-    if (hour < 10) return '05:00';
-    if (hour < 15) return '10:00';
-    if (hour < 20) return '15:00';
+    if (hour < 4) return '00:00';
+    if (hour < 8) return '04:00';
+    if (hour < 12) return '08:00';
+    if (hour < 16) return '12:00';
+    if (hour < 20) return '16:00';
     return '20:00';
   }
 
@@ -343,7 +348,14 @@ class _StatisticPageState extends State<StatisticPage> {
   @override
   Widget build(BuildContext context) {
     final dataMap =
-        _selectedDataType == 'Travel'
+        _selectedDataType == 'All'
+            ? _combineDataMaps([
+              travelData,
+              wasteData,
+              eatingData,
+              shoppingData,
+            ])
+            : _selectedDataType == 'Travel'
             ? travelData
             : _selectedDataType == 'Waste'
             ? wasteData
@@ -352,7 +364,14 @@ class _StatisticPageState extends State<StatisticPage> {
             : shoppingData;
 
     final prevMap =
-        _selectedDataType == 'Travel'
+        _selectedDataType == 'All'
+            ? _combineDataMaps([
+              prevTravelData,
+              prevWasteData,
+              prevEatingData,
+              prevShoppingData,
+            ])
+            : _selectedDataType == 'Travel'
             ? prevTravelData
             : _selectedDataType == 'Waste'
             ? prevWasteData
@@ -409,7 +428,17 @@ class _StatisticPageState extends State<StatisticPage> {
               ],
             ),
             const SizedBox(height: 20),
-            SizedBox(height: 260, child: _buildLineChart(dataMap)),
+            SizedBox(
+              height: 260,
+              child:
+                  _selectedDataType == 'All'
+                      ? _buildStackedBarLineChart()
+                      : _buildLineChart(dataMap),
+            ),
+            if (_selectedDataType == 'All') ...[
+              const SizedBox(height: 10),
+              _buildAllCategoryLegend(),
+            ],
             const SizedBox(height: 16),
             _buildSummaryCard(dataMap, prevMap),
           ],
@@ -770,23 +799,151 @@ class _StatisticPageState extends State<StatisticPage> {
               },
             ),
           ),
-          
-        bottomTitles: AxisTitles(
-  sideTitles: SideTitles(
-    showTitles: true,
-    interval: 1,
-    getTitlesWidget: (value, meta) {
-      if (value % 1 != 0) {
-        return const SizedBox.shrink();
+
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              interval: 1,
+              getTitlesWidget: (value, meta) {
+                if (value % 1 != 0) {
+                  return const SizedBox.shrink();
+                }
+
+                final idx = value.toInt();
+                if (idx < 0 || idx >= labels.length) {
+                  return const SizedBox.shrink();
+                }
+
+                final step =
+                    labels.length <= 6 ? 1 : (labels.length <= 12 ? 2 : 3);
+                final isLast = idx == labels.length - 1;
+
+                if (!isLast && idx % step != 0) {
+                  return const SizedBox.shrink();
+                }
+
+                return SideTitleWidget(
+                  axisSide: meta.axisSide,
+                  space: 6,
+                  child: Text(
+                    labels[idx],
+                    style: const TextStyle(fontSize: 10),
+                  ),
+                );
+              },
+            ),
+          ),
+          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        ),
+      ),
+    );
+  }
+
+  Map<String, double> _combineDataMaps(List<Map<String, double>> maps) {
+    final combined = <String, double>{};
+    for (final map in maps) {
+      map.forEach((key, value) {
+        combined[key] = (combined[key] ?? 0) + value;
+      });
+    }
+    return combined;
+  }
+
+  Widget _buildAllCategoryLegend() {
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: 12,
+      runSpacing: 8,
+      children: List.generate(_allCategoryLabels.length, (i) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: _allCategoryColors[i],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              _allCategoryLabels[i],
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF2C2C2C),
+              ),
+            ),
+          ],
+        );
+      }),
+    );
+  }
+
+  Widget _buildStackedBarLineChart() {
+    final labels = _generateLabelsForCurrentView();
+    final categoryMaps = [travelData, wasteData, eatingData, shoppingData];
+
+    final totals = List.generate(labels.length, (i) {
+      final label = labels[i];
+      return categoryMaps.fold<double>(
+        0,
+        (sum, map) => sum + (map[label] ?? 0),
+      );
+    });
+
+    final hasData = totals.any((value) => value > 0);
+    if (!hasData) {
+      return const Center(child: Text('No data'));
+    }
+
+    final maxY = _calculateMaxY({
+      for (var i = 0; i < totals.length; i++) '$i': totals[i],
+    });
+    final interval = _calculateYAxisInterval({
+      for (var i = 0; i < totals.length; i++) '$i': totals[i],
+    });
+
+    final groups = List.generate(labels.length, (i) {
+      var fromY = 0.0;
+      final stackItems = <BarChartRodStackItem>[];
+
+      for (var c = 0; c < categoryMaps.length; c++) {
+        final value = categoryMaps[c][labels[i]] ?? 0;
+        if (value <= 0) continue;
+        final toY = fromY + value;
+        stackItems.add(BarChartRodStackItem(fromY, toY, _allCategoryColors[c]));
+        fromY = toY;
       }
 
+      return BarChartGroupData(
+        x: i,
+        barRods: [
+          BarChartRodData(
+            toY: fromY,
+            rodStackItems: stackItems,
+            width: 16,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ],
+      );
+    });
+
+    final lineSpots = List.generate(
+      labels.length,
+      (i) => FlSpot(i.toDouble(), totals[i]),
+    );
+
+    Widget buildBottomTitle(double value, TitleMeta meta) {
+      if (value % 1 != 0) return const SizedBox.shrink();
       final idx = value.toInt();
       if (idx < 0 || idx >= labels.length) {
         return const SizedBox.shrink();
       }
 
-      final step =
-          labels.length <= 6 ? 1 : (labels.length <= 12 ? 2 : 3);
+      final step = labels.length <= 6 ? 1 : (labels.length <= 12 ? 2 : 3);
       final isLast = idx == labels.length - 1;
 
       if (!isLast && idx % step != 0) {
@@ -796,18 +953,96 @@ class _StatisticPageState extends State<StatisticPage> {
       return SideTitleWidget(
         axisSide: meta.axisSide,
         space: 6,
-        child: Text(
-          labels[idx],
-          style: const TextStyle(fontSize: 10),
-        ),
+        child: Text(labels[idx], style: const TextStyle(fontSize: 10)),
       );
-    },
-  ),
-),
-          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+    }
+
+    final barTitlesData = FlTitlesData(
+      leftTitles: AxisTitles(
+        sideTitles: SideTitles(
+          showTitles: true,
+          interval: interval,
+          reservedSize: 44,
+          getTitlesWidget:
+              (value, _) => Text(
+                value >= 1
+                    ? value.toStringAsFixed(0)
+                    : value.toStringAsFixed(2),
+                style: const TextStyle(fontSize: 11),
+              ),
         ),
       ),
+      bottomTitles: AxisTitles(
+        sideTitles: SideTitles(
+          showTitles: true,
+          interval: 1,
+          getTitlesWidget: buildBottomTitle,
+        ),
+      ),
+      topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+      rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+    );
+
+    final overlayTitlesData = FlTitlesData(
+      leftTitles: AxisTitles(
+        sideTitles: SideTitles(
+          showTitles: true,
+          interval: interval,
+          reservedSize: 44,
+          getTitlesWidget: (_, __) => const SizedBox.shrink(),
+        ),
+      ),
+      bottomTitles: AxisTitles(
+        sideTitles: SideTitles(
+          showTitles: true,
+          interval: 1,
+          reservedSize: 22,
+          getTitlesWidget: (_, __) => const SizedBox.shrink(),
+        ),
+      ),
+      topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+      rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+    );
+
+    return Stack(
+      children: [
+        BarChart(
+          BarChartData(
+            minY: 0,
+            maxY: maxY,
+            alignment: BarChartAlignment.spaceAround,
+            gridData: FlGridData(show: false),
+            borderData: FlBorderData(show: false),
+            barGroups: groups,
+            titlesData: barTitlesData,
+          ),
+        ),
+        IgnorePointer(
+          child: LineChart(
+            LineChartData(
+              minX: -0.5,
+              maxX: labels.length - 0.5,
+              minY: 0,
+              maxY: maxY,
+              clipData: FlClipData.all(),
+              gridData: FlGridData(show: false),
+              borderData: FlBorderData(show: false),
+              lineBarsData: [
+                LineChartBarData(
+                  spots: lineSpots,
+                  isCurved: true,
+                  curveSmoothness: 0.2,
+                  preventCurveOverShooting: true,
+                  color: const Color(0xFF7BA23F),
+                  barWidth: 2.5,
+                  dotData: FlDotData(show: false),
+                ),
+              ],
+              titlesData: overlayTitlesData,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

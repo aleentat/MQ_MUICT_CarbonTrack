@@ -149,9 +149,9 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
 
   Color _categoryColor(String type) {
     if (type == 'waste') return const Color(0xFFD9F3DD);
-    if (type == 'travel') return const Color(0xFFD9EFFF);
-    if (type == 'eating') return const Color.fromARGB(255, 233, 226, 210);
-    return const Color(0xFFFDE7D4);
+    if (type == 'travel') return const Color(0xFFE3F2FD);
+    if (type == 'eating') return const Color(0xFFE9E2D2);
+    return const Color(0xFFFFEFD5);
   }
 
   IconData _categoryIcon(String type) {
@@ -884,7 +884,7 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: _categoryCardSpacing),
       child: Card(
-        color: const Color(0xFFFFF3E0),
+        color: const Color(0xFFFFEFD5),
         child: ListTile(
           leading: const Icon(
             Icons.shopping_bag,
@@ -905,7 +905,7 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: _categoryCardSpacing),
       child: Card(
-        color: const Color(0xFFE8F5E9),
+        color: const Color(0xFFD9F3DD),
         child: ListTile(
           leading:
               log.imagePath != null &&
@@ -938,7 +938,7 @@ class _CarbonDiaryPageState extends State<CarbonDiaryPage> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: _categoryCardSpacing),
       child: Card(
-        color: const Color.fromARGB(255, 222, 219, 206),
+        color: const Color(0xFFE9E2D2),
         child: ListTile(
           leading: const Icon(
             Icons.restaurant_menu,

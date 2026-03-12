@@ -186,19 +186,19 @@ Future<int> _calculateWeeklyEcoScore() async {
 
   final List<Map<String, String>> mockNews = [
     {
-      "title": "Thailand sets goal to cut CO₂ emissions by 30% by 2030",
+      "title": "How much CO₂ does Thailand emit per person?",
       "summary":
-          "The government introduces a Net Zero policy for national sustainability.",
+          "From Our World in Data",
       "image": "assets/images/news1.jpeg",
-      "url": "https://thailand.go.th/issue-focus-detail/--ndc--2573",
+      "url": "https://ourworldindata.org/profile/co2/thailand",
     },
     {
-      "title": "New technology captures carbon directly from air",
+      "title": "GHG have increased global temperatures",
       "summary":
-          "Scientists develop Direct Air Capture (DAC) to fight climate change.",
-      "image": "assets/images/news2.jpeg",
+          "From Our World in Data",
+      "image": "assets/images/news2.jpg",
       "url":
-          "https://phys.org/news/2025-06-ai-materials-capture-air.html#:~:text=In%20order%20to%20help%20prevent,the%20air—is%20gaining%20attention.",
+          "https://ourworldindata.org/co2-and-greenhouse-gas-emissions",
     },
   ];
 
@@ -231,9 +231,9 @@ Future<int> _calculateWeeklyEcoScore() async {
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Color.fromARGB(255, 155, 255, 242),
-            Color.fromARGB(255, 183, 255, 236),
-            Color.fromARGB(255, 230, 252, 252),
+            Color(0xFF9BFFF2),
+            Color(0xFFB7FFEC),
+            Color(0xFFE6FCFC),
             Color(0xFFFDFDFD),
           ],
           begin: Alignment.topCenter,
@@ -243,10 +243,6 @@ Future<int> _calculateWeeklyEcoScore() async {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          // title: Text(
-          //   'Carbon Diary',
-          //   style: TextStyle(fontWeight: FontWeight.bold),
-          // ),
           backgroundColor: Colors.transparent,
           elevation: 0,
           actions: [
@@ -354,7 +350,7 @@ Future<int> _calculateWeeklyEcoScore() async {
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
         boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 2)),
+          BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4)),
         ],
       ),
       child: Column(
@@ -411,7 +407,7 @@ Future<int> _calculateWeeklyEcoScore() async {
             width: double.infinity,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color.fromARGB(255, 96, 176, 158),
+                backgroundColor: Color(0xFF0aa990),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(30),
                 ),
@@ -431,7 +427,7 @@ Future<int> _calculateWeeklyEcoScore() async {
                 );
               },
               child: const Text(
-                'Go to My Forest 🌳',
+                'Go to My Forest',
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
               ),
             ),
@@ -465,7 +461,7 @@ Future<int> _calculateWeeklyEcoScore() async {
             margin: const EdgeInsets.only(top: 12),
             padding: const EdgeInsets.all(26),
             decoration: BoxDecoration(
-              color: const Color.fromARGB(255, 29, 71, 62),
+              color: Color(0xFF00534b),
               borderRadius: BorderRadius.circular(60),
               boxShadow: [
                 BoxShadow(
@@ -488,7 +484,7 @@ Future<int> _calculateWeeklyEcoScore() async {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  "Keeping your weekly emissions under 70kg of CO₂ is a great way to care for the planet ! ",
+                  "Keeping your weekly emissions under 10.24kg of CO₂ is a great way to care for the planet ! ",
                   style: TextStyle(color: Colors.white, fontSize: 14),
                 ),
               ],
@@ -525,13 +521,13 @@ Future<int> _calculateWeeklyEcoScore() async {
                 margin: const EdgeInsets.only(right: 12),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color.fromARGB(255, 255, 255, 255),
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.grey.withOpacity(0.5),
+                      color: Colors.black12,
                       blurRadius: 6,
-                      offset: const Offset(2, 4),
+                      offset: const Offset(0, 2),
                     ),
                   ],
                 ),
@@ -539,8 +535,8 @@ Future<int> _calculateWeeklyEcoScore() async {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     CircleAvatar(
-                      backgroundColor: const Color.fromARGB(255, 210, 237, 211),
-                      child: Icon(tip['icon'], color: Colors.green[800]),
+                      backgroundColor: Color(0xFF0aa990),
+                      child: Icon(tip['icon'], color: Colors.white),
                     ),
                     const SizedBox(height: 10),
                     Text(
@@ -585,7 +581,7 @@ Future<int> _calculateWeeklyEcoScore() async {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
-      color: const Color(0xFFF5FFF8), 
+      color: Colors.white, 
       elevation: 3,
       shadowColor: Colors.green.shade100,
       child: InkWell(
@@ -604,7 +600,7 @@ Future<int> _calculateWeeklyEcoScore() async {
               child: Image.asset(
                 news['image']!,
                 width: 100,
-                height: 120,
+                height: 100,
                 fit: BoxFit.cover,
               ),
             ),
@@ -619,7 +615,7 @@ Future<int> _calculateWeeklyEcoScore() async {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Colors.green[900],
+                        color: Color(0xFF4b635f),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -638,7 +634,7 @@ Future<int> _calculateWeeklyEcoScore() async {
               child: Icon(
                 Icons.arrow_forward_ios,
                 size: 16,
-                color: Colors.green,
+                color: Color(0xFF4b635f),
               ),
             ),
           ],
@@ -670,7 +666,7 @@ class TrianglePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint =
         Paint()
-          ..color = Color.fromARGB(255, 29, 71, 62)
+          ..color = Color(0xFF00534b)
           ..style = PaintingStyle.fill;
 
     var path = Path();
