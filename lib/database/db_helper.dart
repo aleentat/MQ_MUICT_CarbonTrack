@@ -81,8 +81,6 @@ class DBHelper {
         type TEXT NOT NULL,
         timestamp TEXT NOT NULL,
         quantity INTEGER DEFAULT 1,
-        note TEXT,
-        imagePath TEXT,
         carbon REAL DEFAULT 0.0,
         unit DOUBLE
       )
@@ -137,7 +135,6 @@ class DBHelper {
         category TEXT NOT NULL,
         timestamp TEXT NOT NULL,
         quantity INTEGER NOT NULL,
-        note TEXT,
         carbon REAL NOT NULL,
         unit REAL NOT NULL
       )
@@ -157,6 +154,14 @@ class DBHelper {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         date TEXT,
         count INTEGER
+      )
+      ''');
+
+    await db.execute('''
+      CREATE TABLE diary_day_meta (
+        day_key TEXT PRIMARY KEY,
+        note TEXT,
+        sticker_asset TEXT
       )
       ''');
 
@@ -324,11 +329,30 @@ class DBHelper {
     await db.insert('waste_items', {'name': 'Toxic/Poisonous', 'category': 'Symbol Guide', 'subcategory': 'Non-Recyclable', 'type': 'toxic.png', 'tip': 'Do not dispose in drains or bins. Take to a toxic waste facility or special collection point.'});
   }
 
-static const int _dbVersion = 1;
+static const int _dbVersion = 2;
 
 Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     debugPrint('🔄🔄🔄 onUpgrade CALLED from $oldVersion to $newVersion 🔄🔄🔄');
     // Handle database upgrades here if needed in future versions
+    if (oldVersion < 2) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS diary_day_meta (
+          day_key TEXT PRIMARY KEY,
+          note TEXT,
+          sticker_asset TEXT
+        )
+      ''');
+    }
+  }
+
+  Future<void> _ensureDiaryDayMetaTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS diary_day_meta (
+        day_key TEXT PRIMARY KEY,
+        note TEXT,
+        sticker_asset TEXT
+      )
+    ''');
   }
 
   // --------------------------- Waste Items ---------------------------
@@ -521,6 +545,35 @@ Future<List<Map<String, dynamic>>> getShoppingItems(String category) async {
     where: 'category = ?',
     whereArgs: [category],
   );
+}
+
+// ----------------------- Diary Day Metadata -----------------------
+
+Future<List<Map<String, dynamic>>> getAllDiaryDayMeta() async {
+  final db = await database;
+  await _ensureDiaryDayMetaTable(db);
+  return db.query('diary_day_meta');
+}
+
+Future<void> upsertDiaryDayMeta({
+  required String dayKey,
+  String? note,
+  String? stickerAsset,
+}) async {
+  final db = await database;
+  await _ensureDiaryDayMetaTable(db);
+
+  if ((note == null || note.isEmpty) &&
+      (stickerAsset == null || stickerAsset.isEmpty)) {
+    await db.delete('diary_day_meta', where: 'day_key = ?', whereArgs: [dayKey]);
+    return;
+  }
+
+  await db.insert('diary_day_meta', {
+    'day_key': dayKey,
+    'note': note,
+    'sticker_asset': stickerAsset,
+  }, conflictAlgorithm: ConflictAlgorithm.replace);
 }
 
 Future<void> insertShoppingLog(ShoppingDiaryEntry entry) async {

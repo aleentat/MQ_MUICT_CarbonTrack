@@ -25,8 +25,8 @@ class HomeTreeWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Image.asset(
       _assetForStage(),
-      height: 80,
-      width: 80,
+      height: 90,
+      width: 90,
       fit: BoxFit.contain,
     );
   }

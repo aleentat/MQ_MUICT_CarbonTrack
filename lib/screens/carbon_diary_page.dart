@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../database/db_helper.dart';
@@ -23,9 +22,7 @@ class CarbonDiaryPage extends StatefulWidget {
 }
 
 enum DiaryViewMode { today, week, month }
-
-// future extend
-enum StickerSource { emoji, file, asset }
+enum StickerSource { asset }
 
 class DiarySticker {
   final String value;
@@ -171,6 +168,25 @@ class _CarbonDiaryPageState extends CarbonDiaryPageController {
     final travel = await DBHelper.instance.getAllTravelDiaryEntries();
     final eating = await DBHelper.instance.getAllEatingDiaryEntries();
     final shopping = await DBHelper.instance.getAllShoppingDiaryEntries();
+    final dayMeta = await DBHelper.instance.getAllDiaryDayMeta();
+
+    final stickersByDay = <String, DiarySticker>{};
+    final notesByDay = <String, String>{};
+
+    for (final meta in dayMeta) {
+      final dayKey = meta['day_key']?.toString();
+      if (dayKey == null || dayKey.isEmpty) continue;
+
+      final note = meta['note']?.toString() ?? '';
+      final stickerAsset = meta['sticker_asset']?.toString() ?? '';
+
+      if (note.isNotEmpty) {
+        notesByDay[dayKey] = note;
+      }
+      if (stickerAsset.isNotEmpty) {
+        stickersByDay[dayKey] = DiarySticker.asset(stickerAsset);
+      }
+    }
 
     final combined = <UnifiedDiaryEntry>[
       ...waste.map(
@@ -186,16 +202,21 @@ class _CarbonDiaryPageState extends CarbonDiaryPageController {
             UnifiedDiaryEntry(timestamp: e.timestamp, entry: e, type: 'eating'),
       ),
       ...shopping.map(
-        (e) => UnifiedDiaryEntry(
-          timestamp: e.timestamp,
-          entry: e,
-          type: 'shopping',
-        ),
+        (e) => 
+            UnifiedDiaryEntry(timestamp: e.timestamp, entry: e, type: 'shopping'),
       ),
     ];
 
     combined.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-    setState(() => _combinedEntries = combined);
+    setState(() {
+      _combinedEntries = combined;
+      _stickersByDay
+        ..clear()
+        ..addAll(stickersByDay);
+      _notesByDay
+        ..clear()
+        ..addAll(notesByDay);
+    });
   }
 
   String _dayKey(DateTime day) => DateFormat('y-MM-dd').format(day);
@@ -243,9 +264,9 @@ class _CarbonDiaryPageState extends CarbonDiaryPageController {
 
   Color _categoryColor(String type) {
     if (type == 'waste') return const Color(0xFFD9F3DD);
-    if (type == 'travel') return const Color(0xFFD9EFFF);
-    if (type == 'eating') return const Color.fromARGB(255, 233, 226, 210);
-    return const Color(0xFFFDE7D4);
+    if (type == 'travel') return const Color(0xFFE3F2FD);
+    if (type == 'eating') return const Color(0xFFE9E2D2);
+    return const Color(0xFFFFEFD5);
   }
 
   IconData _categoryIcon(String type) {
@@ -289,11 +310,15 @@ class _CarbonDiaryPageState extends CarbonDiaryPageController {
                 ..._stickerImageOptions.map(
                   (assetPath) => InkWell(
                     onTap: () {
+                      final key = _dayKey(day);
                       setState(() {
-                        _stickersByDay[_dayKey(day)] = DiarySticker.asset(
-                          assetPath,
-                        );
+                        _stickersByDay[key] = DiarySticker.asset(assetPath);
                       });
+                      DBHelper.instance.upsertDiaryDayMeta(
+                        dayKey: key,
+                        note: _notesByDay[key],
+                        stickerAsset: assetPath,
+                      );
                       Navigator.pop(context);
                     },
                     child: Container(
@@ -310,7 +335,13 @@ class _CarbonDiaryPageState extends CarbonDiaryPageController {
                 ),
                 TextButton.icon(
                   onPressed: () {
-                    setState(() => _stickersByDay.remove(_dayKey(day)));
+                    final key = _dayKey(day);
+                    setState(() => _stickersByDay.remove(key));
+                    DBHelper.instance.upsertDiaryDayMeta(
+                      dayKey: key,
+                      note: _notesByDay[key],
+                      stickerAsset: null,
+                    );
                     Navigator.pop(context);
                   },
                   icon: const Icon(
@@ -362,9 +393,18 @@ class _CarbonDiaryPageState extends CarbonDiaryPageController {
                 minLines: 3,
                 maxLines: 6,
                 onChanged: (value) => draftNote = value,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: 'Write your note for today...',
-                  border: OutlineInputBorder(),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(
+                        color: Color(0xFF19AC98),
+                        width: 2,
+                      ),
+                    ),
                 ),
               ),
               const SizedBox(height: 10),
@@ -375,13 +415,13 @@ class _CarbonDiaryPageState extends CarbonDiaryPageController {
                     onPressed: () {
                       Navigator.pop(context);
                     },
-                    child: const Text('Clear'),
+                    child: const Text('Clear', style: TextStyle(color: Colors.black45)),
                   ),
                   ElevatedButton(
                     onPressed: () {
                       Navigator.pop(context, draftNote.trim());
                     },
-                    child: const Text('Save'),
+                    child: const Text('Save', style: TextStyle(color: Color(0xFF006958))),
                   ),
                 ],
               ),
@@ -399,6 +439,12 @@ class _CarbonDiaryPageState extends CarbonDiaryPageController {
         _notesByDay[key] = result;
       }
     });
+
+    await DBHelper.instance.upsertDiaryDayMeta(
+      dayKey: key,
+      note: _notesByDay[key],
+      stickerAsset: _stickersByDay[key]?.value,
+    );
   }
 
   @override
@@ -723,13 +769,26 @@ class _CarbonDiaryPageState extends CarbonDiaryPageController {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Icon(_categoryIcon(e.type), size: 16),
                     const SizedBox(width: 6),
                     Expanded(
-                      child: Text(
-                        _entryPreview(e),
-                        style: const TextStyle(fontSize: 13),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _entryPreview(e),
+                            style: const TextStyle(fontSize: 13),
+                          ),
+                          Text(
+                            _entryCarbonText(e),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     Text(
@@ -981,7 +1040,7 @@ class _CarbonDiaryPageState extends CarbonDiaryPageController {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: _categoryCardSpacing),
       child: Card(
-        color: const Color(0xFFFFF3E0),
+        color: const Color(0xFFFFEFD5),
         child: ListTile(
           leading: const Icon(
             Icons.shopping_bag,
@@ -1002,24 +1061,10 @@ class _CarbonDiaryPageState extends CarbonDiaryPageController {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: _categoryCardSpacing),
       child: Card(
-        color: const Color(0xFFE8F5E9),
+        color: const Color(0xFFD9F3DD),
         child: ListTile(
           leading:
-              log.imagePath != null &&
-                      log.imagePath!.isNotEmpty &&
-                      File(log.imagePath!).existsSync()
-                  ? ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: SizedBox(
-                      width: 38,
-                      height: 38,
-                      child: Image.file(
-                        File(log.imagePath!),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  )
-                  : const Icon(Icons.recycling, color: Color(0xFF4C6A4F)),
+          const Icon(Icons.recycling, color: Color(0xFF4C6A4F)),
           title: Text(log.name, style: TextStyle(fontSize: 15)),
           subtitle: Text(
             'Qty: ${log.quantity ?? '-'} • ${log.carbon.toStringAsFixed(4)} kgCO₂',
@@ -1035,7 +1080,7 @@ class _CarbonDiaryPageState extends CarbonDiaryPageController {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: _categoryCardSpacing),
       child: Card(
-        color: const Color.fromARGB(255, 222, 219, 206),
+        color: const Color(0xFFE9E2D2),
         child: ListTile(
           leading: const Icon(
             Icons.restaurant_menu,
@@ -1086,7 +1131,23 @@ class _CarbonDiaryPageState extends CarbonDiaryPageController {
       final t = e.entry as TravelDiaryEntry;
       return '${t.mode} ${t.distance.toStringAsFixed(0)}km';
     }
-    if (e.type == 'shopping') return (e.entry as ShoppingDiaryEntry).name;
-    return (e.entry as EatingDiaryEntry).name;
+    if (e.type == 'eating') {
+      final x = e.entry as EatingDiaryEntry;
+      return '${x.name} (${x.variant})';
+    }
+    return (e.entry as ShoppingDiaryEntry).name;
+  }
+
+  String _entryCarbonText(UnifiedDiaryEntry e) {
+    if (e.type == 'waste') {
+      return '${(e.entry as WasteDiaryEntry).carbon.toStringAsFixed(4)} kgCO₂';
+    }
+    if (e.type == 'travel') {
+      return '${(e.entry as TravelDiaryEntry).carbon.toStringAsFixed(2)} kgCO₂';
+    }
+    if (e.type == 'shopping') {
+      return '${(e.entry as ShoppingDiaryEntry).carbon.toStringAsFixed(4)} kgCO₂';
+    }
+    return '${(e.entry as EatingDiaryEntry).carbon.toStringAsFixed(4)} kgCO₂';
   }
 }

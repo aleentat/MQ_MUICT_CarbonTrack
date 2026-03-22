@@ -3,7 +3,6 @@ class ShoppingDiaryEntry {
   final String category;
   final DateTime timestamp;
   final int quantity;
-  final String? note;
   final double carbon;
   final double unit; 
 
@@ -12,7 +11,6 @@ class ShoppingDiaryEntry {
     required this.category,
     required this.timestamp,
     this.quantity = 1,
-    this.note = '',
     required this.carbon,
     required this.unit,
   });
@@ -23,7 +21,6 @@ class ShoppingDiaryEntry {
       'category': category,
       'timestamp': timestamp.toIso8601String(),
       'quantity': quantity,
-      'note': note,
       'carbon': carbon,
       'unit': unit,
     };
@@ -35,7 +32,6 @@ class ShoppingDiaryEntry {
       category: map['category'],
       timestamp: DateTime.parse(map['timestamp']),
       quantity: map['quantity'],
-      note: map['note'],
       carbon: map['carbon'],
       unit: map['unit'],
     );

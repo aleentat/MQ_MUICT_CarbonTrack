@@ -90,7 +90,8 @@ class _EatingCalculatorState extends State<EatingCalculator> {
     await StatisticService.sendTodaySummary();
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Saved to eating diary 🌱')),
+      const SnackBar(content: Text('Saved to eating diary 🌱'),
+      backgroundColor: Color(0xFF00838d)),
     );
 
     setState(() {
@@ -243,7 +244,7 @@ class _EatingCalculatorState extends State<EatingCalculator> {
                 decoration: BoxDecoration(
                   color:
                       isSelected
-                          ? const Color.fromARGB(255, 76, 175, 134)
+                          ? Color(0xFF19ac98)
                           : Colors.white,
                   borderRadius: BorderRadius.circular(18),
                   boxShadow: const [
@@ -324,7 +325,7 @@ class _EatingCalculatorState extends State<EatingCalculator> {
                 decoration: BoxDecoration(
                   color:
                       isSelected
-                          ? const Color.fromARGB(255, 76, 175, 134)
+                          ? Color(0xFF19ac98)
                           : Colors.white,
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: const [
@@ -382,8 +383,10 @@ class _EatingCalculatorState extends State<EatingCalculator> {
   }
 
   Widget _buildResultCard() {
-    return Card(
+    return Center(
+      child: Card(
       elevation: 4,
+      color: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -391,7 +394,7 @@ class _EatingCalculatorState extends State<EatingCalculator> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Your Meal Carbon Footprint',
+              'Calculation Result',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -412,6 +415,7 @@ class _EatingCalculatorState extends State<EatingCalculator> {
           ],
         ),
       ),
+      ),
     );
   }
 
@@ -420,14 +424,14 @@ class _EatingCalculatorState extends State<EatingCalculator> {
       child: ElevatedButton(
         onPressed: _saveDiary,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color.fromARGB(255, 29, 71, 62),
+          backgroundColor: const Color.fromARGB(255, 76, 175, 134),
           padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(30),
           ),
         ),
         child: Text(
-          'Save to Diary',
+          'Add to Diary',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 16,

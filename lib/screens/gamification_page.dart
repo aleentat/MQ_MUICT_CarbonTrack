@@ -53,6 +53,21 @@ class _GamificationPageState extends State<GamificationPage> {
     }
   }
 
+  double _treeSize(TreeStage stage) {
+    switch (stage) {
+      case TreeStage.dry:
+        return 80;
+      case TreeStage.seed:
+        return 45;
+      case TreeStage.sprout:
+        return 50;
+      case TreeStage.healthy:
+        return 80;
+      case TreeStage.blooming:
+        return 80;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -110,9 +125,9 @@ class _GamificationPageState extends State<GamificationPage> {
   Widget _buildIsometricForest(List<int> weeklyScores) {
     int weekCount = widget.weeklyEcoScores.length;
 
-    const double tileWidth = 120;
-    const double xOffset = 60;
-    const double yOffset = 40;
+    const double tileWidth = 150;
+    const double xOffset = 70;
+    const double yOffset = 42;
 
     final positions = [
       const Offset(xOffset, 0), // Week 1
@@ -123,7 +138,6 @@ class _GamificationPageState extends State<GamificationPage> {
 
     return Container(
       padding: const EdgeInsets.all(24),
-      decoration: _cardDecoration(),
       child: Column(
         children: [
           const Text(
@@ -136,7 +150,7 @@ class _GamificationPageState extends State<GamificationPage> {
             height: 280,
             child: Transform(
               alignment: Alignment.center,
-              transform: Matrix4.identity()..translate(35.0, 50.0),
+              transform: Matrix4.identity()..translate(14.0, 40.0),
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
@@ -153,21 +167,28 @@ class _GamificationPageState extends State<GamificationPage> {
 
                   // TREE
                   for (int i = 0; i < weekCount; i++)
-                    Positioned(
-                      left: positions[i].dx + tileWidth / 4,
-                      top: positions[i].dy - 20,
-                      child: GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            selectedWeek = i;
-                          });
-                        },
-                        child: Image.asset(
-                          _treeAsset(_stageFromScore(weeklyScores[i])),
-                          width: 65,
+                    () {
+                      final stage = _stageFromScore(weeklyScores[i]);
+                      final treeSize = _treeSize(stage);
+
+                      return Positioned(
+                        left: positions[i].dx + (tileWidth - treeSize) / 2,
+                        top: positions[i].dy + 45 - treeSize,
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              selectedWeek = i;
+                            });
+                          },
+                          child: Image.asset(
+                            _treeAsset(stage),
+                            width: treeSize,
+                            height: treeSize,
+                            fit: BoxFit.contain,
+                          ),
                         ),
-                      ),
-                    ),
+                      );
+                    }(),
                 ],
               ),
             ),
@@ -177,7 +198,7 @@ class _GamificationPageState extends State<GamificationPage> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.8),
+                color: const Color.fromARGB(255, 19, 164, 152),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
@@ -303,16 +324,6 @@ class _GamificationPageState extends State<GamificationPage> {
           ),
         ],
       ),
-    );
-  }
-
-  BoxDecoration _cardDecoration() {
-    return BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      boxShadow: const [
-        BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
-      ],
     );
   }
 }
