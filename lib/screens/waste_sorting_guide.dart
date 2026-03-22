@@ -3,10 +3,6 @@ import '../database/db_helper.dart';
 import '../models/waste_item.dart';
 import '../models/waste_diary_entry.dart';
 import '../utils/info_popup.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
-import 'dart:io';
 import '../services/statistic_service.dart';
 
 class WasteSortingGuide extends StatefulWidget {
@@ -27,7 +23,7 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
     'Paper': ['Newspaper', 'Cardboard', 'Tissue', 'Mixed Paper'],
     'Food': ['Fruit/Vegetable', 'Leftovers', 'Shells & Bones'],
     'Textile': ['Clothing', 'Household Fabric', 'Fabric Waste', 'Footwear'],
-    'Other': ['Battery', 'E-Waste ', 'Hazardous'],
+    'Other': ['Battery', 'E-Waste', 'Hazardous'],
     'Symbol Guide': ['Recyclable Plastic', 'Non-Recyclable'],
   };
 
@@ -41,6 +37,13 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
     'Other': 'assets/images/other.png',
     'Symbol Guide': 'assets/images/symbol.png',
   };
+
+  String _resolveSymbolAssetPath(String imageType) {
+    if (imageType.startsWith('assets/')) {
+      return imageType;
+    }
+    return 'assets/images/symbols/$imageType';
+  }
 
   Color getTypeColor(String type) {
     switch (type) {
@@ -56,8 +59,6 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
         return Colors.grey.shade400;
     }
   }
-
-  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -111,10 +112,9 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
   Future<void> _showAddEntryBottomSheet(WasteItem item) async {
     final _formKey = GlobalKey<FormState>();
     int quantity = 1;
-    String note = '';
-    File? imageFile;
 
     await showModalBottomSheet(
+      backgroundColor: Colors.white,
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
@@ -128,194 +128,122 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
             left: 16,
             right: 16,
           ),
-          child: StatefulBuilder(
-            builder: (context, setModalState) {
-              return Form(
-                key: _formKey,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
+          child: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 5,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[400],
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                    ),
+                  ),
+                  Center(
+                    child: Text(
+                      'Add "${item.name}"\nCarbon Emission: ${item.ef * item.unit} gCO2e',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF00838d),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Quantity
+                  TextFormField(
+                    initialValue: '1',
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: 'Quantity',
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter quantity';
+                      }
+                      final n = int.tryParse(value);
+                      if (n == null || n <= 0) {
+                        return 'Enter a valid number > 0';
+                      }
+                      return null;
+                    },
+                    onChanged: (val) {
+                      final n = int.tryParse(val);
+                      if (n != null && n > 0) quantity = n;
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      Center(
-                        child: Container(
-                          width: 40,
-                          height: 5,
-                          margin: const EdgeInsets.only(bottom: 12),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[400],
-                            borderRadius: BorderRadius.circular(10),
-                          ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(color: Colors.black54),
                         ),
                       ),
-                      Center(
-                        child: Text(
-                          'Add "${item.name}"\nCarbon Emission: ${item.ef * item.unit} gCO2e',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF4C6A4F),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Quantity
-                      TextFormField(
-                        initialValue: '1',
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          labelText: 'Quantity',
-                          filled: true,
-                          fillColor: const Color(0xFFFCFAF2),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter quantity';
-                          }
-                          final n = int.tryParse(value);
-                          if (n == null || n <= 0) {
-                            return 'Enter a valid number > 0';
-                          }
-                          return null;
-                        },
-                        onChanged: (val) {
-                          final n = int.tryParse(val);
-                          if (n != null && n > 0) quantity = n;
-                        },
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      // Note
-                      TextFormField(
-                        decoration: InputDecoration(
-                          labelText: 'Note (optional)',
-                          filled: true,
-                          fillColor: const Color(0xFFFCFAF2),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        maxLines: 2,
-                        onChanged: (val) {
-                          note = val;
-                        },
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      // Image picker
-                      Row(
-                        children: [
-                          ElevatedButton.icon(
-                            onPressed: () async {
-                              final pickedFile = await _picker.pickImage(
-                                source: ImageSource.gallery,
+                      const SizedBox(width: 8),
+                      ElevatedButton.icon(
+                        onPressed: () async {
+                          if (_formKey.currentState!.validate()) {
+                            final entry = WasteDiaryEntry(
+                              name: item.name,
+                              type: item.type,
+                              timestamp: DateTime.now(),
+                              quantity: quantity,
+                              unit: item.unit,
+                              carbon: item.ef / 1000 * quantity * item.unit,
+                            );
+                            try {
+                              await DBHelper.instance.insertWasteDiaryEntry(
+                                entry,
                               );
-                              if (pickedFile != null) {
-                                final tempImage = File(pickedFile.path);
-                                final savedPath = await saveImagePermanently(
-                                  tempImage,
+                              await StatisticService.sendTodaySummary();
+                              if (mounted) {
+                                Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Saved to waste diary 🌱'),
+                                    backgroundColor: Color(0xFF00838d),
+                                  ),
                                 );
-                                setModalState(() {
-                                  imageFile = File(savedPath);
-                                });
                               }
-                            },
-                            icon: const Icon(Icons.photo),
-                            label: const Text('Pick Image'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF44765F),
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
+                            } catch (e) {
+                              print('Failed to save diary entry: $e');
+                            }
+                          }
+                        },
+                        icon: const Icon(Icons.check),
+                        label: const Text('Add'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF00838d),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          const SizedBox(width: 12),
-                          if (imageFile != null)
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image.file(
-                                imageFile!,
-                                width: 50,
-                                height: 50,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                        ],
+                        ),
                       ),
-                      const SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text(
-                              'Cancel',
-                              style: TextStyle(color: Colors.black54),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          ElevatedButton.icon(
-                            onPressed: () async {
-                              if (_formKey.currentState!.validate()) {
-                                final entry = WasteDiaryEntry(
-                                  name: item.name,
-                                  type: item.type,
-                                  timestamp: DateTime.now(),
-                                  quantity: quantity,
-                                  note: note,
-                                  imagePath: imageFile?.path,
-                                  unit: item.unit,
-                                  carbon: item.ef / 1000 * quantity * item.unit,
-                                );
-                                try {
-                                  await DBHelper.instance.insertWasteDiaryEntry(
-                                    entry,
-                                  );
-                                  await StatisticService.sendTodaySummary();
-                                  if (mounted) {
-                                    Navigator.pop(context);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          'Added to diary: ${item.name}',
-                                        ),
-                                        backgroundColor: const Color(
-                                          0xFF4C6A4F,
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                } catch (e) {
-                                  print('Failed to save diary entry: $e');
-                                }
-                              }
-                            },
-                            icon: const Icon(Icons.check),
-                            label: const Text('Add'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF44765F),
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 16),
                     ],
                   ),
-                ),
-              );
-            },
+
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ),
           ),
         );
       },
@@ -324,17 +252,6 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
 
   Future<void> _addToDiary(WasteItem item) async {
     await _showAddEntryBottomSheet(item);
-  }
-
-  Future<String> saveImagePermanently(File image) async {
-    final directory = await getApplicationDocumentsDirectory();
-    final name = p.basename(image.path);
-    final newPath = '${directory.path}/$name';
-
-    if (!File(newPath).existsSync()) {
-      await image.copy(newPath);
-    }
-    return newPath;
   }
 
   Widget _buildHeaderCard() {
@@ -353,7 +270,7 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
           const SizedBox(width: 15),
           Expanded(
             child: Text(
-              'Track your travel footprint 🚗\nEvery trip counts',
+              'Track your waste footprint 🗑️ \nEvery item matters',
               style: TextStyle(fontSize: 15),
             ),
           ),
@@ -391,10 +308,7 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
           foregroundColor: Colors.black,
           title: Text(
             'Waste Calculator',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 22,
-            ),
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
           ),
         ),
         body: SingleChildScrollView(
@@ -422,12 +336,11 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
                     contentPadding: const EdgeInsets.symmetric(vertical: 12.0),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Color(0xFF4C6A4F)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                       borderSide: const BorderSide(
-                        color: Color(0xFF4C6A4F),
+                        color: Color(0xFF19AC98),
                         width: 2,
                       ),
                     ),
@@ -451,11 +364,11 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
                             decoration: BoxDecoration(
                               color:
                                   isSelected
-                                      ? const Color(0xFF4C6A4F)
+                                      ? const Color(0xFF008a77)
                                       : Colors.white,
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
-                                color: const Color(0xFF4C6A4F),
+                                color: const Color(0xFFbababa),
                               ),
                             ),
                             child: Stack(
@@ -477,7 +390,7 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
                                           color:
                                               isSelected
                                                   ? Colors.white
-                                                  : const Color(0xFF4C6A4F),
+                                                  : Colors.black87,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
@@ -501,7 +414,7 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
                                       decoration: BoxDecoration(
                                         color:
                                             isSelected
-                                                ? Colors.white.withOpacity(0.3)
+                                                ? Colors.white12
                                                 : Colors.grey[200],
                                         shape: BoxShape.circle,
                                       ),
@@ -542,7 +455,7 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
                             ),
                             selected: isSelected,
                             onSelected: (_) => _onSubcategorySelected(sub),
-                            selectedColor: const Color(0xFF4C6A4F),
+                            selectedColor: const Color(0xFF008a77),
                             backgroundColor: Colors.white,
                             labelStyle: TextStyle(
                               color: isSelected ? Colors.white : Colors.black,
@@ -568,13 +481,15 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            border: Border.all(color: const Color(0xFF4C6A4F)),
+                            border: Border.all(color: const Color(0xFFbababa)),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Image.asset(item.type, width: 50, height: 50),
+                              Image.asset(
+                                _resolveSymbolAssetPath(item.type), width: 50, height: 50,
+                              ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Column(
@@ -603,7 +518,7 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
                               IconButton(
                                 icon: const Icon(
                                   Icons.add,
-                                  color: Color(0xFF4C6A4F),
+                                  color: Colors.black54,
                                 ),
                                 onPressed: () => _addToDiary(item),
                                 tooltip: 'Add to diary',
@@ -626,7 +541,7 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(10),
                             color: Colors.white,
-                            border: Border.all(color: const Color(0xFF4C6A4F)),
+                            border: Border.all(color: const Color(0xFFbababa)),
                           ),
                           child: ListTile(
                             title: Text(
@@ -683,10 +598,6 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
                                 const SizedBox(height: 8),
                                 Container(
                                   padding: const EdgeInsets.all(8),
-                                  // decoration: BoxDecoration(
-                                  //   color: Color(0xFFEEF3EA),
-                                  //   borderRadius: BorderRadius.circular(8),
-                                  // ),
                                   child: Row(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
@@ -694,7 +605,7 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
                                       const Icon(
                                         Icons.tips_and_updates,
                                         size: 16,
-                                        color: Color(0xFF4C6A4F),
+                                        color: Color(0xFF008a77),
                                       ),
                                       const SizedBox(width: 6),
                                       Expanded(
@@ -714,7 +625,7 @@ class _WasteSortingGuideState extends State<WasteSortingGuide> {
                             trailing: IconButton(
                               icon: const Icon(
                                 Icons.add,
-                                color: Color(0xFF4C6A4F),
+                                color: Colors.black54,
                               ),
                               onPressed: () => _addToDiary(item),
                               tooltip: 'Add to diary',

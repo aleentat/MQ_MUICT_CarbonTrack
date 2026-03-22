@@ -12,8 +12,8 @@ class StatisticPage extends StatefulWidget {
 }
 
 class _StatisticPageState extends State<StatisticPage> {
-  String _selectedDataType = 'Travel';
-  String _selectedTimeframe = '1W';
+  String _selectedDataType = 'All';
+  String _selectedTimeframe = '1D';
   DateTime _currentViewDate = DateTime.now();
   List<dynamic> travelEntries = [];
   List<dynamic> wasteEntries = [];
@@ -33,10 +33,10 @@ class _StatisticPageState extends State<StatisticPage> {
   final List<String> timeframes = ['1D', '1W', '1M', '6M', '1Y'];
   final List<String> _allCategoryLabels = ['Travel', 'Waste', 'Eating', 'Shopping'];
   final List<Color> _allCategoryColors = const [
-    Color(0xFF4E79A7),
-    Color.fromARGB(255, 87, 225, 92),
-    Color.fromARGB(255, 146, 114, 81),
-    Color.fromARGB(255, 255, 175, 70),
+    Color.fromARGB(255, 144, 198, 255),
+    Color.fromARGB(255, 147, 255, 150),
+    Color.fromARGB(255, 184, 144, 105),
+    Color.fromARGB(255, 255, 198, 123),
   ];
   
   List<String> _oneDayTimeLabels() {
@@ -655,7 +655,7 @@ class _StatisticPageState extends State<StatisticPage> {
           BoxShadow(
             color: Colors.black12,
             blurRadius: 12,
-            offset: Offset(0, 6), // shadow เฉพาะด้านล่าง
+            offset: Offset(0, 6),
           ),
         ],
       ),
@@ -1031,10 +1031,10 @@ class _StatisticPageState extends State<StatisticPage> {
                 LineChartBarData(
                   spots: lineSpots,
                   isCurved: true,
-                  curveSmoothness: 0.2,
+                  curveSmoothness: 0.3,
                   preventCurveOverShooting: true,
-                  color: const Color(0xFF7BA23F),
-                  barWidth: 2.5,
+                  color: const Color(0xFF009895),
+                  barWidth: 3.5,
                   dotData: FlDotData(show: false),
                 ),
               ],

@@ -3,8 +3,6 @@ class WasteDiaryEntry {
   final String type; // Compost / Recyclable / Trash
   final DateTime timestamp;
   final int quantity;
-  final String? note;  
-  final String? imagePath;
   final double carbon;
   final double unit; 
 
@@ -13,8 +11,6 @@ class WasteDiaryEntry {
     required this.type,
     required this.timestamp,
     this.quantity = 1,
-    this.note = '',
-    this.imagePath,
     required this.carbon,
     required this.unit,
   });
@@ -25,8 +21,6 @@ class WasteDiaryEntry {
       'type': type,
       'timestamp': timestamp.toIso8601String(),
       'quantity': quantity,
-      'note': note,
-      'imagePath': imagePath,
       'carbon': carbon,
       'unit': unit,
     };
@@ -38,8 +32,6 @@ class WasteDiaryEntry {
       type: map['type'],
       timestamp: DateTime.parse(map['timestamp']),
       quantity: map['quantity'],
-      note: map['note'],
-      imagePath: map['imagePath'],
       carbon: map['carbon'],
       unit: map['unit'],
     );

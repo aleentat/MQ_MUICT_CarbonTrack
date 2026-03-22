@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
-// import 'package:sqflite/sqflite.dart';
-// import 'package:path/path.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-// import 'package:google_fonts/google_fonts.dart';
 import 'screens/home_page.dart';
 import 'database/db_helper.dart';
 
@@ -20,7 +17,6 @@ class CarbonDiaryApp extends StatelessWidget {
     return MaterialApp(
       title: 'Carbon Diary',
       theme: ThemeData(useMaterial3: true,),
-      // theme: ThemeData(textTheme: GoogleFonts.nunitoTextTheme()),
       debugShowCheckedModeBanner: false,
       home: HomePage(),
     );

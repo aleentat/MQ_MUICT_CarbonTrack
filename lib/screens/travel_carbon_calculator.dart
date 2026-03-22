@@ -28,51 +28,43 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
 
   final Map<String, Map<String, double>> vehicleOptions = {
     'Diesel Car': {
-      'Small': 0.139306448880537,
-      'Medium': 0.167156448880537,
-      'Large': 0.208586448880537,
-      'Mini': 0.107746448880537,
-      'Supermini': 0.132146448880537,
-      'Luxury': 0.211196448880537,
-      'Sports': 0.169436448880537,
+      'Small': 0.14340,
+      'Medium': 0.17174,
+      'Large': 0.21007,
+      'Sports': 0.17232,
     },
     'Petrol Car': {
-      'Small': 0.140798534228188,
-      'Medium': 0.178188534228188,
-      'Large': 0.272238534228188,
-      'Mini': 0.130298534228188,
-      'Supermini': 0.141688534228188,
-      'Luxury': 0.318088534228188,
-      'Sports': 0.237158534228188,
+      'Small': 0.14308,
+      'Medium': 0.17474,
+      'Large': 0.26828,
+      'Sports': 0.23396,
     },
     'Hybrid Car': {
-      'Small': 0.101498857718121,
-      'Medium': 0.109038436241611,
-      'Large': 0.1524358,
+      'Small': 0.11413,
+      'Medium': 0.11724,
+      'Large': 0.15650,
     },
     'Electric Car': {
-      'Small': 0.0482282859060403,
-      'Medium': 0.0526663489932886,
-      'Large': 0.05737,
-      'Mini': 0.0443381932885906,
-      'Supermini': 0.0490671785234899,
-      'Luxury': 0.0583732120805369,
-      'Sports': 0.0834804456375839,
+      'Small': 0.03688,
+      'Medium': 0.03882,
+      'Large': 0.04205,
+      'Sports': 0.06260,
     },
     'Bus': {
-      'Regular': 0.102150394630872,
-      'Coach': 0.0271814013422819,
-      'Trolleybus': 0.00699,
+      'Local bus': 0.10385,
+      'Local London bus': 0.06875,
+      'Coach': 0.02776,
     },
     'Train': {
-      'National rail': 0.0354629637583893,
-      'Light rail and tram': 0.028603267114094,
-      'Underground': 0.027802067114094,
+      'National rail': 0.03546,
+      'International rail': 0.00446,
+      'Light rail / Tram / BTS Skytrain': 0.0286,
+      'Underground / MRT Subway': 0.02780,
     },
     'Motorcycle': {
-      'Small': 0.0831851865771812,
-      'Medium': 0.10107835704698,
-      'Large': 0.13251915704698,
+      'Small': 0.08319,
+      'Medium': 0.10108,
+      'Large': 0.13252,
     },
     'Bicycle': {'None': 0.0},
     'Walk': {'None': 0.0},
@@ -112,10 +104,8 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
     await StatisticService.sendTodaySummary();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          'Added to diary: ${_carbonOutput.toStringAsFixed(2)} kg CO₂',
-        ),
-      ),
+        content: Text('Saved to travel diary 🌱'),
+        backgroundColor: Color(0xFF00838d)),
     );
     setState(() {
       _calculated = false;
@@ -177,7 +167,7 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
   TextStyle headingStyle = TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.bold,
-    color: Color.fromARGB(255, 40, 69, 45),
+    color: Color(0xFF004a3b),
   );
   TextStyle labelStyle = TextStyle(fontSize: 15, color: Colors.black87);
 
@@ -197,6 +187,10 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
             fillColor: Colors.white,
             contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: Color(0xFF19AC98), width: 2),
+            ),
           ),
         ),
         ...predictions.map(
@@ -244,11 +238,11 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
                 width: (MediaQuery.of(context).size.width - 90) / 3,
                 padding: EdgeInsets.symmetric(vertical: 14),
                 decoration: BoxDecoration(
-                  color: isSelected ? Color(0xFF44765F) : Colors.white,
+                  color: isSelected ? Color(0xFF008a77) : Colors.white,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color:
-                        isSelected ? Color(0xFF44765F) : Colors.grey.shade300,
+                        isSelected ? Color(0xFF008a77) : Colors.grey.shade300,
                     width: 1.5,
                   ),
                   boxShadow:
@@ -267,7 +261,7 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
                   children: [
                     Icon(
                       iconsMap[type] ?? Icons.directions_car,
-                      color: isSelected ? Colors.white : Color(0xFF44765F),
+                      color: isSelected ? Colors.white : Color(0xFF008a77),
                       size: 26,
                     ),
                     SizedBox(height: 6),
@@ -275,7 +269,7 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
                       type,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: isSelected ? Colors.white : Color(0xFF44765F),
+                        color: isSelected ? Colors.white : Color(0xFF006958),
                         fontWeight: FontWeight.w600,
                         fontSize: 13,
                       ),
@@ -374,7 +368,7 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
       child: ElevatedButton(
         onPressed: _calculateDistance,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color.fromARGB(255, 29, 71, 62),
+          backgroundColor: Color(0xFF006958),
           padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(30),
@@ -393,34 +387,34 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
   }
 
   Widget _buildResultCard() {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      elevation: 4,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Calculation Result',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+    return Center(
+      child: Card(
+        color: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        elevation: 4,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Calculation Result',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-            ),
-            const SizedBox(height: 10),
-            Text('🛣 Distance: ${_distance.toStringAsFixed(2)} km'),
-            Text('🚗 Mode: $_vehicleType ($_subType)'),
-            const SizedBox(height: 10),
-            Text(
-              '${_carbonOutput.toStringAsFixed(2)} kg CO₂',
-              style: TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-                color: const Color.fromARGB(255, 226, 83, 73),
+              const SizedBox(height: 10),
+              Text('🛣 Distance: ${_distance.toStringAsFixed(2)} km'),
+              Text('🚗 Mode: $_vehicleType ($_subType)'),
+              const SizedBox(height: 10),
+              Text(
+                '${_carbonOutput.toStringAsFixed(2)} kg CO₂',
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                  color: const Color.fromARGB(255, 226, 83, 73),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -440,6 +434,7 @@ class _TravelCarbonCalculatorState extends State<TravelCarbonCalculator> {
         child: Text(
           'Add to Diary',
           style: TextStyle(
+            fontSize: 16,
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),

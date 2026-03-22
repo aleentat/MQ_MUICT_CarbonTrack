@@ -355,92 +355,124 @@ Future<int> _calculateWeeklyEcoScore() async {
         '${DateFormat('d MMM').format(weekStart)} - ${DateFormat('d MMM yyyy').format(weekEnd)}';
 
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(40, 25, 40, 27),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
         boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4)),
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
         ],
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Title + Date
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text(
-                'Weekly Eco Score',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '($weekRange)',
-                style: const TextStyle(fontSize: 13, color: Colors.grey),
-              ),
-            ],
+          const Text(
+            'Weekly Eco Score',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 25),
+          const SizedBox(height: 4),
+          Text(
+            weekRange,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 16,
+              color: Colors.grey,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 18),
           Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              // Tree
-              HomeTreeWidget(stage: treeStage),
-              const SizedBox(width: 25),
-              // Score + Stage
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '$weeklyEcoScore',
-                    style: const TextStyle(
-                      fontSize: 40,
-                      fontWeight: FontWeight.bold,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const SizedBox(width: 10),
+                        const Icon(Icons.stars_rounded, size: 30),
+                        const SizedBox(width: 12),
+                        Text(
+                          '$weeklyEcoScore',
+                          style: const TextStyle(
+                            fontSize: 30,
+                            fontWeight: FontWeight.w700,
+                            height: 1,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Score',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 6),
+                    const SizedBox(height: 24),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF19AC98),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
+                        ),
+                      ),
+                      onPressed: () async {
+                        await _loadData();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (_) => GamificationPage(
+                                  weeklyEcoScores: _monthlyWeeklyScores,
+                                  weeklyDailyCarbon: _weeklyDailyCarbon,
+                                  weeklyDailyScores: _weeklyDailyScores,
+                                ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.forest_rounded, size: 30),
+                      label: const Text(
+                        'My Forest',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  HomeTreeWidget(stage: treeStage),
+                  const SizedBox(height: 2),
                   Text(
                     _treeLabel(treeStage),
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ],
               ),
+              const SizedBox(width: 8),
             ],
-          ),
-          const SizedBox(height: 25),
-          // Button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFF0aa990),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-              onPressed: () async {
-                await _loadData();
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => GamificationPage(
-                      weeklyEcoScores: _monthlyWeeklyScores,
-                      weeklyDailyCarbon: _weeklyDailyCarbon,
-                      weeklyDailyScores: _weeklyDailyScores,
-                    ),
-                  ),
-                );
-              },
-              child: const Text(
-                'Go to My Forest',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
-              ),
-            ),
           ),
         ],
       ),
@@ -494,8 +526,8 @@ Future<int> _calculateWeeklyEcoScore() async {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  "Keeping your weekly emissions under 10.24kg of CO₂ is a great way to care for the planet ! ",
-                  style: TextStyle(color: Colors.white, fontSize: 14),
+                  "The average person in Thailand produces about 10.24 kg of CO₂e every day ! ",
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500, fontSize: 14),
                 ),
               ],
             ),
@@ -545,8 +577,8 @@ Future<int> _calculateWeeklyEcoScore() async {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     CircleAvatar(
-                      backgroundColor: Color(0xFF0aa990),
-                      child: Icon(tip['icon'], color: Colors.white),
+                      backgroundColor: Color.fromARGB(255, 227, 242, 242),
+                      child: Icon(tip['icon'], color: Color(0xFF19AC98)),
                     ),
                     const SizedBox(height: 10),
                     Text(
@@ -593,7 +625,6 @@ Future<int> _calculateWeeklyEcoScore() async {
       ),
       color: Colors.white, 
       elevation: 3,
-      shadowColor: Colors.green.shade100,
       child: InkWell(
         onTap: () async {
           final url = Uri.parse(news['url'] ?? '');
@@ -625,13 +656,13 @@ Future<int> _calculateWeeklyEcoScore() async {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF4b635f),
+                        color: Colors.grey[900],
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       news['summary']!,
-                      style: TextStyle(fontSize: 13, color: Colors.grey[800]),
+                      style: TextStyle(fontSize: 13, color: Colors.grey[700]),
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -657,7 +688,7 @@ Future<int> _calculateWeeklyEcoScore() async {
     return ConvexAppBar(
       style: TabStyle.reactCircle,
       backgroundColor: Colors.white,
-      activeColor: Color.fromARGB(255, 96, 176, 158),
+      activeColor: Color(0xFF19AC98),
       color: Colors.grey[600],
       items: [
         TabItem(icon: Icons.home, title: 'Home'),

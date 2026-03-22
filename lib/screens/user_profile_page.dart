@@ -129,7 +129,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                       child: ElevatedButton(
                         onPressed: _save,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color.fromARGB(255, 75, 140, 114),
+                          backgroundColor: Color(0xFF008a77),
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),

@@ -18,13 +18,15 @@ class _ShoppingCalculatorState extends State<ShoppingCalculator> {
   double _carbonResult = 0.0;
   bool _calculated = false;
 
-  final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
-
   final List<String> categories = [
     'Clothing',
     'Electronics',
   ];
+
+  final Map<String, String> _categoryImages = {
+    'Clothing': 'assets/images/shop_cloth.png',
+    'Electronics': 'assets/images/shop_elec.png',
+  };
 
   @override
   void initState() {
@@ -67,7 +69,6 @@ class _ShoppingCalculatorState extends State<ShoppingCalculator> {
       category: _category,
       timestamp: DateTime.now(),
       quantity: _quantity,
-      note: '',
       unit:
           (selectedProduct['emission_factor'] as num).toDouble(),
       carbon: _carbonResult,
@@ -77,7 +78,8 @@ class _ShoppingCalculatorState extends State<ShoppingCalculator> {
     await StatisticService.sendTodaySummary();
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Saved to Carbon Diary 🌱")),
+      const SnackBar(content: Text("Saved to shopping diary 🌱"),
+      backgroundColor: Color(0xFF00838d)),
     );
 
     setState(() {
@@ -123,8 +125,6 @@ class _ShoppingCalculatorState extends State<ShoppingCalculator> {
             children: [
               _buildHeaderCard(),
               const SizedBox(height: 25),
-              _productSearchBox(),
-              const SizedBox(height: 25),
               _buildCategorySelector(),
               const SizedBox(height: 25),
               _buildProductSelector(),
@@ -135,6 +135,8 @@ class _ShoppingCalculatorState extends State<ShoppingCalculator> {
               if (_calculated) ...[
                 const SizedBox(height: 30),
                 _buildResultCard(),
+                const SizedBox(height: 20),
+                _buildAddDiaryButton(),
               ],
             ],
           ),
@@ -162,28 +164,6 @@ class _ShoppingCalculatorState extends State<ShoppingCalculator> {
     );
   }
 
-  Widget _productSearchBox() {
-    return TextField(
-      controller: _searchController,
-      onChanged: (value) {
-        setState(() {
-          _searchQuery = value.toLowerCase();
-        });
-      },
-      decoration: InputDecoration(
-        hintText: 'Search product...',
-        prefixIcon: const Icon(Icons.search),
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(vertical: 14),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
-          borderSide: BorderSide.none,
-        ),
-      ),
-    );
-  }
-
   Widget _buildCategorySelector() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -207,27 +187,37 @@ class _ShoppingCalculatorState extends State<ShoppingCalculator> {
                     const EdgeInsets.symmetric(vertical: 16),
                 decoration: BoxDecoration(
                   color: selected
-                      ? const Color.fromARGB(
-                          255, 76, 175, 134)
+                      ? Color(0xFF008a77)
                       : Colors.white,
                   borderRadius:
                       BorderRadius.circular(16),
                   border: Border.all(
                     color: selected
-                        ? const Color.fromARGB(
-                            255, 76, 175, 134)
+                        ? Color(0xFF008a77)
                         : Colors.grey.shade300,
                   ),
                 ),
                 child: Center(
-                  child: Text(
-                    c,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: selected
-                          ? Colors.white
-                          : Colors.black87,
-                    ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Image.asset(
+                        _categoryImages[c]!,
+                        height: 55,
+                        width: 55,
+                        fit: BoxFit.contain,
+                      ),
+                      const SizedBox(height: 13),
+                      Text(
+                        c,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: selected
+                              ? Colors.white
+                              : Colors.black87,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -239,36 +229,36 @@ class _ShoppingCalculatorState extends State<ShoppingCalculator> {
   }
 
   Widget _buildProductSelector() {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      _sectionTitle('Select Product'),
-      const SizedBox(height: 12),
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: _cardDecoration(),
-        child: DropdownButtonHideUnderline(
-          child: DropdownButton<int>(
-            value: _selectedProductId,
-            hint: const Text("Choose item"),
-            isExpanded: true,
-            items: _products.map<DropdownMenuItem<int>>((product) {
-              return DropdownMenuItem<int>(
-                value: product['id'],
-                child: Text(product['name']),
-              );
-            }).toList(),
-            onChanged: (value) {
-              setState(() {
-                _selectedProductId = value;
-              });
-            },
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionTitle('Select Product'),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: _cardDecoration(),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<int>(
+              value: _selectedProductId,
+              hint: const Text("Choose item"),
+              isExpanded: true,
+              items: _products.map<DropdownMenuItem<int>>((product) {
+                return DropdownMenuItem<int>(
+                  value: product['id'],
+                  child: Text(product['name']),
+                );
+              }).toList(),
+              onChanged: (value) {
+                setState(() {
+                  _selectedProductId = value;
+                });
+              },
+            ),
           ),
         ),
-      ),
-    ],
-  );
-}
+      ],
+    );
+  }
 
   Widget _buildQuantitySelector() {
     return Column(
@@ -314,8 +304,7 @@ class _ShoppingCalculatorState extends State<ShoppingCalculator> {
       child: ElevatedButton(
         onPressed: _calculateCarbon,
         style: ElevatedButton.styleFrom(
-          backgroundColor:
-              const Color.fromARGB(255, 29, 71, 62),
+          backgroundColor: Color(0xFF006958),
           padding: const EdgeInsets.symmetric(
               horizontal: 40, vertical: 16),
           shape: RoundedRectangleBorder(
@@ -336,57 +325,59 @@ class _ShoppingCalculatorState extends State<ShoppingCalculator> {
   }
 
   Widget _buildResultCard() {
-    return Card(
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20)),
-      elevation: 4,
-      color: Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Calculation Result',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+    return Center(
+      child: Card(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        elevation: 4,
+        color: Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Calculation Result',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-                '🛍 Product: ${_selectedProductId == null ? '' : _products.firstWhere((p) => p['id'] == _selectedProductId)['name']}'),
-            Text('🔢 Quantity: $_quantity'),
-            const SizedBox(height: 10),
-            Text(
-              '${_carbonResult.toStringAsFixed(2)} kg CO₂',
-              style: const TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-                color:
-                    Color.fromARGB(255, 226, 83, 73),
+              const SizedBox(height: 10),
+              Text(
+                '🛍 Product: ${_selectedProductId == null ? '' : _products.firstWhere((p) => p['id'] == _selectedProductId)['name']}',
               ),
-            ),
-            const SizedBox(height: 15),
-            ElevatedButton(
-              onPressed: _saveToDiary,
-              style: ElevatedButton.styleFrom(
-                backgroundColor:
-                    const Color.fromARGB(
-                        255, 29, 71, 62),
-                shape: RoundedRectangleBorder(
-                  borderRadius:
-                      BorderRadius.circular(20),
+              Text('🔢 Quantity: $_quantity'),
+              const SizedBox(height: 10),
+              Text(
+                '${_carbonResult.toStringAsFixed(2)} kg CO₂',
+                style: const TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                  color: Color.fromARGB(255, 226, 83, 73),
                 ),
               ),
-              child: const Text(
-                'Save to Diary',
-                style:
-                    TextStyle(color: Colors.white),
-              ),
-            ),
-          ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAddDiaryButton() {
+    return Center(
+      child: ElevatedButton(
+        onPressed: _saveToDiary,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color.fromARGB(255, 76, 175, 134),
+          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
+        ),
+        child: Text(
+          'Add to Diary',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
       ),
     );

@@ -1,3 +1,4 @@
 {
-    "cmake.sourceDirectory": "/Users/aleentatangcharoensukwong/Desktop/CarbonDiary_MQ/carbondiary/ios/windows/flutter"
+    "cmake.sourceDirectory": "/Users/aleentatangcharoensukwong/Desktop/CarbonDiary_MQ/carbondiary/ios/windows/flutter",
+    "java.configuration.updateBuildConfiguration": "interactive"
 }

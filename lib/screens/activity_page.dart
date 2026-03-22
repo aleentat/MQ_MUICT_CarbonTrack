@@ -40,17 +40,8 @@ class _ActivityPageState extends State<ActivityPage> {
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color.fromARGB(
-                          255,
-                          39,
-                          76,
-                          67,
-                        ).withOpacity(0.9),
+                        color: Color(0xFF008a77),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: Colors.grey.shade300,
-                          width: 1,
-                        ),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black12,
@@ -63,8 +54,8 @@ class _ActivityPageState extends State<ActivityPage> {
                         today,
                         style: TextStyle(
                           fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: const Color.fromARGB(255, 255, 255, 255),
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
                         ),
                       ),
                     ),
