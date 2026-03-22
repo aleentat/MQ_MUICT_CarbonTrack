@@ -10,9 +10,13 @@ import 'gamification_page.dart';
 import '../widgets/home_tree_widget.dart';
 import '../models/weekly_eco_state.dart';
 import '../utils/eco_score_calculator.dart';
-import 'user_profile_page.dart'; 
+import 'user_profile_page.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+
   @override
   _HomePageState createState() => _HomePageState();
 }
@@ -20,12 +24,157 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
   int _weeklyEcoScore = 0;
+  final GlobalKey<ActivityPageController> activityPageKey = GlobalKey();
+  final GlobalKey<CarbonDiaryPageController> diaryPageKey = GlobalKey();
+  final GlobalKey<StatisticPageController> statsPageKey = GlobalKey();
 
+  GlobalKey forestButtonKey = GlobalKey();
+  GlobalKey activityButtonKey = GlobalKey();
+  GlobalKey diaryButtonKey = GlobalKey();
+  GlobalKey statsButtonKey = GlobalKey();
+  GlobalKey profileButtonKey = GlobalKey();
+  GlobalKey infoButtonKey = GlobalKey();
+  GlobalKey refreshButtonKey = GlobalKey();
+
+  late TutorialCoachMark tutorialCoachMark;
+  List<TargetFocus> targets = [];
+
+  void initTutorial() {
+    targets = [
+
+      TargetFocus(
+        identify: "Profile",
+        keyTarget: profileButtonKey,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            child: Text(
+              "Tap here to view or edit your profile.",
+              style: TextStyle(color: Colors.white, fontSize: 16),
+            ),
+          ),
+        ],
+      ),
+
+      TargetFocus(
+        identify: "Info",
+        keyTarget: infoButtonKey,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            child: Text(
+              "Tap here to view app tutorials anytime.",
+              style: TextStyle(color: Colors.white, fontSize: 16),
+            ),
+          ),
+        ],
+      ),
+
+      TargetFocus(
+        identify: "Refresh",
+        keyTarget: refreshButtonKey,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            child: Text(
+              "Refresh your latest eco score data.",
+              style: TextStyle(color: Colors.white, fontSize: 16),
+            ),
+          ),
+        ],
+      ),
+
+      TargetFocus(
+        identify: "Forest",
+        keyTarget: forestButtonKey,
+        shape: ShapeLightFocus.RRect,
+        radius: 8, 
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+              child: Text(
+                "Visit your forest to see how your eco score grows your trees!",
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
+          ),
+        ],
+      ),
+
+      TargetFocus(
+        identify: "Activity",
+        keyTarget: activityButtonKey,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            child: Text(
+              "Add daily your activities here.",
+              style: TextStyle(color: Colors.white, fontSize: 16),
+            ),
+          ),
+        ],
+      ),
+
+      TargetFocus(
+        identify: "Diary",
+        keyTarget: diaryButtonKey,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            child: Text(
+              "View your activities in the diary.",
+              style: TextStyle(color: Colors.white, fontSize: 16),
+            ),
+          ),
+        ],
+      ),
+
+      TargetFocus(
+        identify: "Stats",
+        keyTarget: statsButtonKey,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            child: Text(
+              "View charts and track your carbon progress.",
+              style: TextStyle(color: Colors.white, fontSize: 16),
+            ),
+          ),
+        ],
+      ),
+
+    ];
+  }
+
+  void showTutorial() {
+  tutorialCoachMark = TutorialCoachMark(
+    targets: targets,
+    colorShadow: Colors.black,
+    textSkip: "SKIP",
+    opacityShadow: 0.8,
+  );
+
+  tutorialCoachMark.show(context: context);
+}
+
+ Future<void> _checkTutorial() async {
+  final prefs = await SharedPreferences.getInstance();
+  bool seenTutorial = prefs.getBool('seenTutorial') ?? false;
+
+  if (!seenTutorial) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      initTutorial();
+      showTutorial();
+    });
+
+    await prefs.setBool('seenTutorial', true);
+  }
+}
 
   @override
   void initState() {
     super.initState();
     _loadData();
+    _checkTutorial();
   }
 
   List<int> _monthlyWeeklyScores = [0, 0, 0, 0];
@@ -192,7 +341,24 @@ Future<int> _calculateWeeklyEcoScore() async {
     setState(() {
       _selectedIndex = index;
     });
+
+    if (index == 1) {
+    Future.delayed(Duration(milliseconds: 300), () {
+      activityPageKey.currentState?.checkActivityTutorial();
+    });
+}
+    if (index == 2) {
+    Future.delayed(Duration(milliseconds: 300), () {
+      diaryPageKey.currentState?.checkDiaryTutorial();
+      diaryPageKey.currentState?.refresh();
+    });
   }
+    if (index == 3) {
+    Future.delayed(Duration(milliseconds: 300), () {
+      statsPageKey.currentState?.checkStatisticTutorial();
+    });
+  }
+}
 
   final List<Map<String, String>> mockNews = [
     {
@@ -256,22 +422,40 @@ Future<int> _calculateWeeklyEcoScore() async {
           backgroundColor: Colors.transparent,
           elevation: 0,
           actions: [
-            IconButton(icon: const Icon(Icons.person), onPressed: () {Navigator.push(context, MaterialPageRoute(builder: (_) => const UserProfilePage(),),);},),
-            IconButton(icon: Icon(Icons.refresh), onPressed: _loadData),
+            IconButton(key: profileButtonKey,icon: const Icon(Icons.person), onPressed: () {Navigator.push(context, MaterialPageRoute(builder: (_) => const UserProfilePage(),),);},),
+            IconButton(
+              key: infoButtonKey,
+              icon: Icon(Icons.info_outline),
+              onPressed: () {
+                switch (_selectedIndex) {
+                  case 0:
+                    initTutorial();
+                    showTutorial();
+                    break;
+
+                  case 1:
+                    activityPageKey.currentState?.showTutorial();
+                    break;
+                  case 2:
+                    diaryPageKey.currentState?.showTutorial();
+                    break;
+                  case 3:
+                    statsPageKey.currentState?.showTutorial();
+                    break;
+                }
+              },
+            ),
+            IconButton(key: refreshButtonKey,icon: Icon(Icons.refresh), onPressed: _loadData),
           ],
         ),
-        body: AnimatedSwitcher(
-          duration: Duration(milliseconds: 300),
-          child: IndexedStack(
-            key: ValueKey<int>(_selectedIndex),
-            index: _selectedIndex,
-            children: [
-              _buildHomeContent(),
-              ActivityPage(),
-              CarbonDiaryPage(),
-              StatisticPage(),
-            ],
-          ),
+        body: IndexedStack(
+          index: _selectedIndex,
+          children: [
+            _buildHomeContent(),
+            ActivityPage(key: activityPageKey),
+            CarbonDiaryPage(key: diaryPageKey),
+            StatisticPage(key: statsPageKey),
+          ],
         ),
         bottomNavigationBar: _buildBottomNavBar(),
       ),
@@ -332,173 +516,172 @@ Future<int> _calculateWeeklyEcoScore() async {
     );
   }
 
-  Widget _buildEcoScoreBar() {
-    final int weeklyEcoScore = _weeklyEcoScore;
+Widget _buildEcoScoreBar() {
+  final int weeklyEcoScore = _weeklyEcoScore;
 
-    TreeStage treeStage;
-    if (weeklyEcoScore >= 7) {
-      treeStage = TreeStage.blooming;
-    } else if (weeklyEcoScore >= 5) {
-      treeStage = TreeStage.healthy;
-    } else if (weeklyEcoScore >= 3) {
-      treeStage = TreeStage.sprout;
-    } else if (weeklyEcoScore >= 1) {
-      treeStage = TreeStage.seed;
-    } else {
-      treeStage = TreeStage.dry;
-    }
+  TreeStage treeStage;
+  if (weeklyEcoScore >= 7) {
+    treeStage = TreeStage.blooming;
+  } else if (weeklyEcoScore >= 5) {
+    treeStage = TreeStage.healthy;
+  } else if (weeklyEcoScore >= 3) {
+    treeStage = TreeStage.sprout;
+  } else if (weeklyEcoScore >= 1) {
+    treeStage = TreeStage.seed;
+  } else {
+    treeStage = TreeStage.dry;
+  }
 
-    DateTime now = DateTime.now();
-    DateTime weekStart = now.subtract(Duration(days: now.weekday - 1));
-    DateTime weekEnd = weekStart.add(const Duration(days: 6));
-    String weekRange =
-        '${DateFormat('d MMM').format(weekStart)} - ${DateFormat('d MMM yyyy').format(weekEnd)}';
+  DateTime now = DateTime.now();
+  DateTime weekStart = now.subtract(Duration(days: now.weekday - 1));
+  DateTime weekEnd = weekStart.add(const Duration(days: 6));
+  String weekRange =
+      '${DateFormat('d MMM').format(weekStart)} - ${DateFormat('d MMM yyyy').format(weekEnd)}';
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final bool isNarrow = constraints.maxWidth < 380;
-        final double scoreFontSize = isNarrow ? 24 : 30;
-        final double labelFontSize = isNarrow ? 18 : 22;
-        final double treeSize = isNarrow ? 74 : 90;
+  return LayoutBuilder(
+    builder: (context, constraints) {
+      final bool isNarrow = constraints.maxWidth < 380;
+      final double scoreFontSize = isNarrow ? 24 : 30;
+      final double labelFontSize = isNarrow ? 18 : 22;
+      final double treeSize = isNarrow ? 74 : 90;
 
-        return Container(
-          padding: EdgeInsets.fromLTRB(
-            isNarrow ? 25 : 40,
-            30,
-            isNarrow ? 25 : 40,
-            30,
-          ),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: const [
-              BoxShadow(
-                color: Colors.black12,
-                blurRadius: 10,
-                offset: Offset(0, 4),
+      return Container(
+        padding: EdgeInsets.fromLTRB(
+          isNarrow ? 25 : 40,
+          30,
+          isNarrow ? 25 : 40,
+          30,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: const [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 10,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const Text(
+              'Weekly Eco Score',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              weekRange,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 16,
+                color: Colors.grey,
+                fontWeight: FontWeight.w500,
               ),
-            ],
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const Text(
-                'Weekly Eco Score',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                weekRange,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 22),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [              
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Wrap(
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          spacing: 8,
-                          runSpacing: 4,
-                          children: [
-                            const Icon(Icons.stars_rounded, size: 30),
-                            Text(
-                              '$weeklyEcoScore',
-                              style: TextStyle(
-                                fontSize: scoreFontSize,
-                                fontWeight: FontWeight.w700,
-                                height: 1,
-                              ),
-                            ),
-                            Text(
-                              'Score',
-                              style: TextStyle(
-                                fontSize: labelFontSize,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 18),
-                        ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF19AC98),
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            padding: EdgeInsets.symmetric(
-                              horizontal: isNarrow ? 14 : 20,
-                              vertical: 10,
+            ),
+            const SizedBox(height: 22),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: [
+                          const Icon(Icons.stars_rounded, size: 30),
+                          Text(
+                            '$weeklyEcoScore',
+                            style: TextStyle(
+                              fontSize: scoreFontSize,
+                              fontWeight: FontWeight.w700,
+                              height: 1,
                             ),
                           ),
-                          onPressed: () async {
-                            await _loadData();
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder:
-                                    (_) => GamificationPage(
-                                      weeklyEcoScores: _monthlyWeeklyScores,
-                                      weeklyDailyCarbon: _weeklyDailyCarbon,
-                                      weeklyDailyScores: _weeklyDailyScores,
-                                    ),
-                              ),
-                            );
-                          },
-                          icon: const Icon(Icons.forest_rounded, size: 30),
-                          label: Text(
-                            'My Forest',
+                          Text(
+                            'Score',
                             style: TextStyle(
-                              fontSize: isNarrow ? 15 : 17,
+                              fontSize: labelFontSize,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
+                        ],
+                      ),
+                      const SizedBox(height: 18),
+                      ElevatedButton.icon(
+                        key: forestButtonKey,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF19AC98),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isNarrow ? 14 : 20,
+                            vertical: 10,
+                          ),
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 3),
-                  ConstrainedBox(
-                    constraints: BoxConstraints(
-                      minWidth: isNarrow ? 90 : 96,
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        HomeTreeWidget(stage: treeStage, size: treeSize),
-                        const SizedBox(height: 2),
-                        Text(
-                          _treeLabel(treeStage),
-                          textAlign: TextAlign.center,
+                        onPressed: () async {
+                          await _loadData();
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => GamificationPage(
+                                weeklyEcoScores: _monthlyWeeklyScores,
+                                weeklyDailyCarbon: _weeklyDailyCarbon,
+                                weeklyDailyScores: _weeklyDailyScores,
+                              ),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.forest_rounded, size: 30),
+                        label: Text(
+                          'My Forest',
                           style: TextStyle(
-                            fontSize: isNarrow ? 18 : 22,
+                            fontSize: isNarrow ? 15 : 17,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
+                ),
+                const SizedBox(width: 12),
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minWidth: isNarrow ? 90 : 96,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      HomeTreeWidget(stage: treeStage, size: treeSize),
+                      const SizedBox(height: 2),
+                      Text(
+                        _treeLabel(treeStage),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: isNarrow ? 18 : 22,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
 
   String _treeLabel(TreeStage stage) {
     switch (stage) {
@@ -712,10 +895,28 @@ Future<int> _calculateWeeklyEcoScore() async {
       activeColor: Color(0xFF19AC98),
       color: Colors.grey[600],
       items: [
-        TabItem(icon: Icons.home, title: 'Home'),
-        TabItem(icon: Icons.local_activity, title: 'Activity'),
-        TabItem(icon: Icons.book, title: 'Diary'),
-        TabItem(icon: Icons.bar_chart, title: 'Stats'),
+        TabItem(icon: Icon(Icons.home), title: 'Home'),
+        TabItem(
+          icon: Container(
+            key: activityButtonKey,
+            child: Icon(Icons.local_activity),
+          ),
+          title: 'Activity',
+        ),
+        TabItem(
+          icon: Container(
+            key: diaryButtonKey,
+            child: Icon(Icons.book),
+          ),
+          title: 'Diary',
+        ),
+        TabItem(
+          icon: Container(
+            key: statsButtonKey,
+            child: Icon(Icons.bar_chart),
+          ),
+          title: 'Stats',
+        ),
       ],
       initialActiveIndex: _selectedIndex,
       onTap: _onItemTapped,
