@@ -601,6 +601,7 @@ Future<int> _calculateWeeklyEcoScore() async {
                     ),
                     const SizedBox(height: 24),
                     ElevatedButton.icon(
+                      key: forestButtonKey,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF19AC98),
                         foregroundColor: Colors.white,

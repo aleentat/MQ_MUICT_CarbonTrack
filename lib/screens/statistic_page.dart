@@ -19,10 +19,10 @@ class StatisticPage extends StatefulWidget {
   const StatisticPage({super.key});
 
   @override
-  StatisticPageController createState() => StatisticPageState();
+  StatisticPageController createState() => _StatisticPageState();
 }
 
-class _StatisticPageState extends State<StatisticPage> {
+class _StatisticPageState extends StatisticPageController {
   String _selectedDataType = 'All';
   String _selectedTimeframe = '1D';
   DateTime _currentViewDate = DateTime.now();

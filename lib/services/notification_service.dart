@@ -29,6 +29,10 @@ static Future<void> scheduleDaily8AM() async {
   final tzTime = nextInstanceOf8AM();
 
   print("🔔 Scheduling notification at: $tzTime");
+  
+  final canExact = await _notifications
+      .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+      ?.canScheduleExactNotifications() ?? false;
 
   await _notifications.zonedSchedule(
     0,
@@ -45,7 +49,9 @@ static Future<void> scheduleDaily8AM() async {
         playSound: true,
       ),
     ),
-    androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+    androidScheduleMode: canExact
+        ? AndroidScheduleMode.exactAllowWhileIdle
+        : AndroidScheduleMode.inexactAllowWhileIdle, 
     uiLocalNotificationDateInterpretation:
         UILocalNotificationDateInterpretation.absoluteTime,
     matchDateTimeComponents: DateTimeComponents.time,
