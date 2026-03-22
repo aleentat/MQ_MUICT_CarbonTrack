@@ -6,45 +6,57 @@ class NotificationService {
   static final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
 
-  static Future<void> init() async {
-    tz.initializeTimeZones();
+static Future<void> init() async {
+  tz.initializeTimeZones();
+  tz.setLocalLocation(tz.getLocation('Asia/Bangkok'));
 
-    const AndroidInitializationSettings androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+  const AndroidInitializationSettings androidSettings =
+      AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    const InitializationSettings settings =
-        InitializationSettings(android: androidSettings);
+  const InitializationSettings settings =
+      InitializationSettings(android: androidSettings);
 
-    await _notifications.initialize(settings);
-  }
+  await _notifications.initialize(
+    settings,
+    onDidReceiveNotificationResponse: (details) {},
+  );
 
-  static Future<void> scheduleDaily8AM() async {
-    await _notifications.zonedSchedule(
-        0,
-        'Carbon Diary 🌱',
-        'Start your day by logging your activities!',
-        _nextInstanceOf8AM(),
-        const NotificationDetails(
-        android: AndroidNotificationDetails(
-            'daily_channel',
-            'Daily Reminder',
-            importance: Importance.max,
-            priority: Priority.high,
-        ),
-        ),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
+  await _notifications.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.requestNotificationsPermission();
+  await _notifications.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.requestExactAlarmsPermission();
+}
 
-        matchDateTimeComponents: DateTimeComponents.time,
-    );
+static Future<void> scheduleDaily8AM() async {
+  final tzTime = nextInstanceOf8AM();
+
+  print("🔔 Scheduling notification at: $tzTime");
+
+  await _notifications.zonedSchedule(
+    0,
+    'Carbon Diary 🌱',
+    'Start your day by logging your activities!',
+    tzTime,
+    const NotificationDetails(
+      android: AndroidNotificationDetails(
+        'daily_channel',
+        'Daily Reminder',
+        channelDescription: 'Daily 8AM reminder',
+        importance: Importance.max,
+        priority: Priority.high,
+        playSound: true,
+      ),
+    ),
+    androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+    uiLocalNotificationDateInterpretation:
+        UILocalNotificationDateInterpretation.absoluteTime,
+    matchDateTimeComponents: DateTimeComponents.time,
+  );
 }
 
   static Future<void> cancelAll() async {
     await _notifications.cancelAll();
   }
 
-  static tz.TZDateTime _nextInstanceOf8AM() {
+  static tz.TZDateTime nextInstanceOf8AM() {
     final now = tz.TZDateTime.now(tz.local);
 
     var scheduled =

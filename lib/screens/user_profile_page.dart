@@ -15,6 +15,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
   final _ageController = TextEditingController();
   final DBHelper _dbHelper = DBHelper.instance;
   bool isNotificationOn = false;
+  String debugTime = "";
 
   @override
   void initState() {
@@ -62,13 +63,23 @@ class _UserProfilePageState extends State<UserProfilePage> {
     setState(() {
       isNotificationOn = value;
     });
-
     await prefs.setBool('daily_notification', value);
 
     if (value) {
+       final next = NotificationService.nextInstanceOf8AM();
+        setState(() {
+          debugTime =
+              "Next notification: ${next.year}-${next.month.toString().padLeft(2, '0')}-${next.day.toString().padLeft(2, '0')} at 08:00";
+        });
+
+      // Schedule daily 8AM notification
       await NotificationService.scheduleDaily8AM();
     } else {
       await NotificationService.cancelAll();
+
+      setState(() {
+        debugTime = "Notifications turned off";
+      });
     }
   }
 
@@ -175,12 +186,23 @@ class _UserProfilePageState extends State<UserProfilePage> {
                     const SizedBox(height: 20),
                     SwitchListTile(
                       title: const Text(
-                        "Daily Reminder",
+                        "Morning Reminder",
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      subtitle: const Text("Notify me at 8:00 AM"),
+                      subtitle: const Text("Notify me at 8:00 AM (UTC+7)"),
                       value: isNotificationOn,
                       onChanged: toggleNotification,
+                    ),
+                    if (debugTime.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        debugTime,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey,
+                        ),
+                      ),
                     ),
                   ],
                 ),
