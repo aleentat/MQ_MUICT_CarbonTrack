@@ -125,17 +125,6 @@ class _GamificationPageState extends State<GamificationPage> {
   Widget _buildIsometricForest(List<int> weeklyScores) {
     int weekCount = widget.weeklyEcoScores.length;
 
-    const double tileWidth = 150;
-    const double xOffset = 70;
-    const double yOffset = 42;
-
-    final positions = [
-      const Offset(xOffset, 0), // Week 1
-      const Offset(xOffset * 2, yOffset), // Week 2
-      const Offset(0, yOffset), // Week 3
-      const Offset(xOffset, yOffset * 2), // Week 4
-    ];
-
     return Container(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -145,53 +134,80 @@ class _GamificationPageState extends State<GamificationPage> {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 20),
-          SizedBox(
-            width: 320,
-            height: 280,
-            child: Transform(
-              alignment: Alignment.center,
-              transform: Matrix4.identity()..translate(14.0, 40.0),
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  // LAND
-                  for (int i = 0; i < weekCount; i++)
-                    Positioned(
-                      left: positions[i].dx,
-                      top: positions[i].dy,
-                      child: Image.asset(
-                        'assets/images/land.png',
-                        width: tileWidth,
+                    LayoutBuilder(
+            builder: (context, constraints) {
+              final isCompact = constraints.maxWidth < 360;
+              final scale = isCompact ? 0.82 : 1.0;
+              const baseTileWidth = 150.0;
+              const baseXOffset = 70.0;
+              const baseYOffset = 42.0;
+
+              final tileWidth = baseTileWidth * scale;
+              final xOffset = baseXOffset * scale;
+              final yOffset = baseYOffset * scale;
+              final forestWidth = 320 * scale;
+              final forestHeight = 280 * scale;
+                        final positions = [
+                Offset(xOffset, 0), // Week 1
+                Offset(xOffset * 2, yOffset), // Week 2
+                Offset(0, yOffset), // Week 3
+                Offset(xOffset, yOffset * 2), // Week 4
+              ];
+
+              return SizedBox(
+                width: constraints.maxWidth,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.center,
+                  child: SizedBox(
+                    width: forestWidth,
+                    height: forestHeight,
+                    child: Transform(
+                      alignment: Alignment.center,
+                      transform: Matrix4.identity()
+                        ..translate(14.0 * scale, 40.0 * scale),
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          for (int i = 0; i < weekCount; i++)
+                            Positioned(
+                              left: positions[i].dx,
+                              top: positions[i].dy,
+                              child: Image.asset(
+                                'assets/images/land.png',
+                                width: tileWidth,
+                              ),
+                            ),
+                          for (int i = 0; i < weekCount; i++)
+                            () {
+                              final stage = _stageFromScore(weeklyScores[i]);
+                              final treeSize = _treeSize(stage) * scale;
+
+                              return Positioned(
+                                left: positions[i].dx + (tileWidth - treeSize) / 2,
+                                top: positions[i].dy + (45 * scale) - treeSize,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      selectedWeek = i;
+                                    });
+                                  },
+                                  child: Image.asset(
+                                    _treeAsset(stage),
+                                    width: treeSize,
+                                    height: treeSize,
+                                    fit: BoxFit.contain,
+                                  ),
+                                ),
+                              );
+                            }(),
+                        ],
                       ),
                     ),
-
-                  // TREE
-                  for (int i = 0; i < weekCount; i++)
-                    () {
-                      final stage = _stageFromScore(weeklyScores[i]);
-                      final treeSize = _treeSize(stage);
-
-                      return Positioned(
-                        left: positions[i].dx + (tileWidth - treeSize) / 2,
-                        top: positions[i].dy + 45 - treeSize,
-                        child: GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              selectedWeek = i;
-                            });
-                          },
-                          child: Image.asset(
-                            _treeAsset(stage),
-                            width: treeSize,
-                            height: treeSize,
-                            fit: BoxFit.contain,
-                          ),
-                        ),
-                      );
-                    }(),
-                ],
-              ),
-            ),
+                  ),
+                ),
+              );
+            },
           ),
           const SizedBox(height: 12),
           if (selectedWeek != null)

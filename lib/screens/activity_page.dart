@@ -63,7 +63,7 @@ class _ActivityPageState extends State<ActivityPage> {
                 ],
               ),
             ),
-            SizedBox(height: 50),
+            SizedBox(height: 30),
             Center(
               child: Text(
                 'Choose an activity to log',

@@ -354,128 +354,149 @@ Future<int> _calculateWeeklyEcoScore() async {
     String weekRange =
         '${DateFormat('d MMM').format(weekStart)} - ${DateFormat('d MMM yyyy').format(weekEnd)}';
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(40, 25, 40, 27),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 10,
-            offset: Offset(0, 4),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool isNarrow = constraints.maxWidth < 380;
+        final double scoreFontSize = isNarrow ? 24 : 30;
+        final double labelFontSize = isNarrow ? 18 : 22;
+        final double treeSize = isNarrow ? 74 : 90;
+
+        return Container(
+          padding: EdgeInsets.fromLTRB(
+            isNarrow ? 25 : 40,
+            30,
+            isNarrow ? 25 : 40,
+            30,
           ),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          const Text(
-            'Weekly Eco Score',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: const [
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 10,
+                offset: Offset(0, 4),
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            weekRange,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 16,
-              color: Colors.grey,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 18),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+              const Text(
+                'Weekly Eco Score',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                weekRange,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 22),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [              
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SizedBox(width: 10),
-                        const Icon(Icons.stars_rounded, size: 30),
-                        const SizedBox(width: 12),
-                        Text(
-                          '$weeklyEcoScore',
-                          style: const TextStyle(
-                            fontSize: 30,
-                            fontWeight: FontWeight.w700,
-                            height: 1,
+                        Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 8,
+                          runSpacing: 4,
+                          children: [
+                            const Icon(Icons.stars_rounded, size: 30),
+                            Text(
+                              '$weeklyEcoScore',
+                              style: TextStyle(
+                                fontSize: scoreFontSize,
+                                fontWeight: FontWeight.w700,
+                                height: 1,
+                              ),
+                            ),
+                            Text(
+                              'Score',
+                              style: TextStyle(
+                                fontSize: labelFontSize,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 18),
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF19AC98),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: isNarrow ? 14 : 20,
+                              vertical: 10,
+                            ),
+                          ),
+                          onPressed: () async {
+                            await _loadData();
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (_) => GamificationPage(
+                                      weeklyEcoScores: _monthlyWeeklyScores,
+                                      weeklyDailyCarbon: _weeklyDailyCarbon,
+                                      weeklyDailyScores: _weeklyDailyScores,
+                                    ),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.forest_rounded, size: 30),
+                          label: Text(
+                            'My Forest',
+                            style: TextStyle(
+                              fontSize: isNarrow ? 15 : 17,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        const Text(
-                          'Score',
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 3),
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minWidth: isNarrow ? 90 : 96,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        HomeTreeWidget(stage: treeStage, size: treeSize),
+                        const SizedBox(height: 2),
+                        Text(
+                          _treeLabel(treeStage),
+                          textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontSize: 22,
+                            fontSize: isNarrow ? 18 : 22,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF19AC98),
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 10,
-                        ),
-                      ),
-                      onPressed: () async {
-                        await _loadData();
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder:
-                                (_) => GamificationPage(
-                                  weeklyEcoScores: _monthlyWeeklyScores,
-                                  weeklyDailyCarbon: _weeklyDailyCarbon,
-                                  weeklyDailyScores: _weeklyDailyScores,
-                                ),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.forest_rounded, size: 30),
-                      label: const Text(
-                        'My Forest',
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  HomeTreeWidget(stage: treeStage),
-                  const SizedBox(height: 2),
-                  Text(
-                    _treeLabel(treeStage),
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                    ),
                   ),
                 ],
               ),
-              const SizedBox(width: 8),
             ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 

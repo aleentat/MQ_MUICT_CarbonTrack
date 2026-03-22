@@ -3,8 +3,9 @@ import '../models/weekly_eco_state.dart';
 
 class HomeTreeWidget extends StatelessWidget {
   final TreeStage stage;
+  final double size;
 
-  const HomeTreeWidget({super.key, required this.stage});
+  const HomeTreeWidget({super.key, required this.stage, this.size = 90});
 
   String _assetForStage() {
     switch (stage) {
@@ -25,8 +26,8 @@ class HomeTreeWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Image.asset(
       _assetForStage(),
-      height: 90,
-      width: 90,
+      height: size,
+      width: size,
       fit: BoxFit.contain,
     );
   }
