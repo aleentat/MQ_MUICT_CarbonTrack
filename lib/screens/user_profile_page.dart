@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../database/db_helper.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../services/notification_service.dart';
 
 class UserProfilePage extends StatefulWidget {
   const UserProfilePage({super.key});
@@ -12,11 +14,13 @@ class _UserProfilePageState extends State<UserProfilePage> {
   final _usernameController = TextEditingController();
   final _ageController = TextEditingController();
   final DBHelper _dbHelper = DBHelper.instance;
+  bool isNotificationOn = false;
 
   @override
   void initState() {
     super.initState();
     _loadUser();
+    loadState();
   }
 
   Future<void> _loadUser() async {
@@ -43,6 +47,29 @@ class _UserProfilePageState extends State<UserProfilePage> {
     );
 
     Navigator.pop(context);
+  }
+
+  Future<void> loadState() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      isNotificationOn = prefs.getBool('daily_notification') ?? false;
+    });
+  }
+
+  Future<void> toggleNotification(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    setState(() {
+      isNotificationOn = value;
+    });
+
+    await prefs.setBool('daily_notification', value);
+
+    if (value) {
+      await NotificationService.scheduleDaily8AM();
+    } else {
+      await NotificationService.cancelAll();
+    }
   }
 
   @override
@@ -144,6 +171,16 @@ class _UserProfilePageState extends State<UserProfilePage> {
                           ),
                         ),
                       ),
+                    ),
+                    const SizedBox(height: 20),
+                    SwitchListTile(
+                      title: const Text(
+                        "Daily Reminder",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: const Text("Notify me at 8:00 AM"),
+                      value: isNotificationOn,
+                      onChanged: toggleNotification,
                     ),
                   ],
                 ),
