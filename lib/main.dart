@@ -9,8 +9,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
   await NotificationService.init();
+  await _initAsync();
   runApp(CarbonDiaryApp());
-  _initAsync();
 }
 
 Future<void> _initAsync() async {
