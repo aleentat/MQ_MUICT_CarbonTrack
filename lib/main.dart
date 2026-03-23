@@ -7,9 +7,31 @@ import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(fileName: ".env");
-  await NotificationService.init();
-  await _initAsync();
+
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    debugPrint("dotenv failed: $e");
+  }
+
+  try {
+    await NotificationService.init();
+  } catch (e) {
+    debugPrint("notification init failed: $e");
+  }
+
+  try {
+    await _initAsync();
+  } catch (e) {
+    debugPrint("async init failed: $e");
+  }
+
+  try {
+    await DBHelper.instance.incrementAppOpen();
+  } catch (e) {
+    debugPrint("DB init failed: $e");
+  }
+
   runApp(CarbonDiaryApp());
 }
 
@@ -20,8 +42,6 @@ Future<void> _initAsync() async {
   if (isOn) {
     await NotificationService.scheduleDaily8AM();
   }
-
-  await DBHelper.instance.incrementAppOpen();
 }
 
 class CarbonDiaryApp extends StatelessWidget {
@@ -29,7 +49,7 @@ class CarbonDiaryApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Carbon Diary',
-      theme: ThemeData(useMaterial3: true,),
+      theme: ThemeData(useMaterial3: true),
       debugShowCheckedModeBanner: false,
       home: HomePage(),
     );
