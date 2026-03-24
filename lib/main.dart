@@ -4,6 +4,7 @@ import 'screens/home_page.dart';
 import 'database/db_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'services/notification_service.dart';
+import 'services/smart_travel_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
