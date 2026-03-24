@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../database/db_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/notification_service.dart';
+import '../services/smart_travel_service.dart';
 
 class UserProfilePage extends StatefulWidget {
   const UserProfilePage({super.key});
@@ -16,6 +17,10 @@ class _UserProfilePageState extends State<UserProfilePage> {
   final DBHelper _dbHelper = DBHelper.instance;
   bool isNotificationOn = false;
   String debugTime = "";
+
+  // Travel mode toggle
+  final smartService = SmartTravelService();
+  bool isSmartTravelOn = false;
 
   @override
   void initState() {
@@ -54,6 +59,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       isNotificationOn = prefs.getBool('daily_notification') ?? false;
+      isSmartTravelOn = prefs.getBool('smart_travel_enabled') ?? false;
     });
   }
 
@@ -81,6 +87,17 @@ class _UserProfilePageState extends State<UserProfilePage> {
         debugTime = "Notifications turned off";
       });
     }
+  }
+
+  Future<void> toggleSmartTravel(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    setState(() {
+      isSmartTravelOn = value;
+    });
+
+    await prefs.setBool('smart_travel_enabled', value);
+    await smartService.toggle(value);
   }
 
   @override
@@ -203,6 +220,18 @@ class _UserProfilePageState extends State<UserProfilePage> {
                           color: Colors.grey,
                         ),
                       ),
+                    ),
+                    const SizedBox(height: 10),
+                    SwitchListTile(
+                      title: const Text(
+                        "Smart Travel Detection",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: const Text(
+                        "Automatically detect trips and remind you to log them",
+                      ),
+                      value: isSmartTravelOn,
+                      onChanged: toggleSmartTravel,
                     ),
                   ],
                 ),

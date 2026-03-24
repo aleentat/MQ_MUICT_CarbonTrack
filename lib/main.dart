@@ -32,6 +32,12 @@ void main() async {
     debugPrint("DB init failed: $e");
   }
 
+  try {
+    await SmartTravelService().init();
+  } catch (e) {
+    debugPrint("SmartTravelService init failed: $e");
+  }
+
   runApp(CarbonDiaryApp());
 }
 
