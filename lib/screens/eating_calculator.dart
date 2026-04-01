@@ -42,9 +42,13 @@ class _EatingCalculatorState extends State<EatingCalculator> {
       return 'assets/images/foods/pork.png';
     case 'Fish':
       return 'assets/images/foods/fish.png';
+    case 'Shrimp':
+      return 'assets/images/foods/shrimp.png';
+    case 'Egg':
+      return 'assets/images/foods/eggs.png';
     default:
     // add more cases as needed
-      return 'assets/images/foods/example.jpg';
+      return 'assets/images/foods/dish.png';
   }
 }
 
