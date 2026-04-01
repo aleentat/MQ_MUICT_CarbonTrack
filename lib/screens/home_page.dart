@@ -256,23 +256,32 @@ class _HomePageState extends State<HomePage> {
 
     DateTime now = DateTime.now();
     DateTime firstDayOfMonth = DateTime(now.year, now.month, 1);
-
+    // Start from Monday of first week (may be last month)
+    DateTime firstWeekStart = firstDayOfMonth.subtract(
+      Duration(days: firstDayOfMonth.weekday - 1),
+    );
+    // End of last week (4 weeks total)
+    DateTime lastWeekEnd = firstWeekStart.add(
+      const Duration(days: 27),
+    ); // 4 * 7 - 1
     List<int> weeklyScores = [];
     List<List<double>> weeklyCarbonData = [];
     List<List<int>> weeklyScoreData = [];
 
     // Loop 4 weeks
     for (int week = 0; week < 4; week++) {
-      DateTime weekStart = firstDayOfMonth.add(Duration(days: week * 7));
+      DateTime weekStart = firstWeekStart.add(Duration(days: week * 7));
       DateTime weekEnd = weekStart.add(const Duration(days: 6));
 
       Map<int, double> dailyCarbon = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0};
 
       void addEntry(DateTime timestamp, double carbon) {
         final d = DateTime(timestamp.year, timestamp.month, timestamp.day);
-
-        if (!d.isBefore(weekStart) && !d.isAfter(weekEnd)) {
-          dailyCarbon[d.weekday] = (dailyCarbon[d.weekday] ?? 0) + carbon;
+        // filter by FULL RANGE (not month)
+        if (!d.isBefore(firstWeekStart) && !d.isAfter(lastWeekEnd)) {
+          if (!d.isBefore(weekStart) && !d.isAfter(weekEnd)) {
+            dailyCarbon[d.weekday] = (dailyCarbon[d.weekday] ?? 0) + carbon;
+          }
         }
       }
 

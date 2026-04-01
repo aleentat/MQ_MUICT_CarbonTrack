@@ -30,16 +30,6 @@ class _GamificationPageState extends State<GamificationPage> {
 
   String _treeAsset(TreeStage stage) {
     switch (stage) {
-      // case TreeStage.dry:
-      //   return 'assets/gif/dry-tree.gif';
-      // case TreeStage.seed:
-      //   return 'assets/gif/seed.gif';
-      // case TreeStage.sprout:
-      //   return 'assets/gif/growing-plant.gif';
-      // case TreeStage.healthy:
-      //   return 'assets/gif/tree.gif';
-      // case TreeStage.blooming:
-      //   return 'assets/gif/blossom-tree.gif';
       case TreeStage.dry:
         return 'assets/images/trees/drytree.png';
       case TreeStage.seed:
@@ -72,12 +62,15 @@ class _GamificationPageState extends State<GamificationPage> {
   void initState() {
     super.initState();
 
-    // Determine current week of month
     final now = DateTime.now();
-    final weekIndex = ((now.day - 1) ~/ 7);
+    final firstDayOfMonth = DateTime(now.year, now.month, 1);
+    final firstWeekStart = firstDayOfMonth.subtract(Duration(days: firstDayOfMonth.weekday - 1));
+    final difference = now.difference(firstWeekStart).inDays;
+    final weekIndex = difference ~/ 7;
 
     if (widget.weeklyEcoScores.isNotEmpty) {
-      selectedWeek = weekIndex.clamp(0, widget.weeklyEcoScores.length - 1);
+      selectedWeek =
+          weekIndex.clamp(0, widget.weeklyEcoScores.length - 1);
     }
   }
 
